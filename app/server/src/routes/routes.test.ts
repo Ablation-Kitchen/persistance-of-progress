@@ -223,3 +223,71 @@ describe("validation and limits", () => {
     expect(res.body).toMatchObject({ error: { code: "bad-request" } });
   });
 });
+
+describe("PUT /api/enrollments/:id/tasks/:taskId/state", () => {
+  type StateRes = { record: Snapshot["taskStates"][number]; stateVersion: number };
+  const put = (id: string, taskId: string, body: unknown) =>
+    call<StateRes>("PUT", `/api/enrollments/${id}/tasks/${taskId}/state`, body);
+
+  it("creates a record, bumps stateVersion and shows up in the snapshot", async () => {
+    const { id, stateVersion } = (await create()).body;
+    const res = await put(id, "intro-to-llms", { status: "done", statusDate: "2026-09-08" });
+    expect(res.status).toBe(200);
+    expect(res.body.record).toMatchObject({
+      taskId: "intro-to-llms",
+      status: "done",
+      statusDate: "2026-09-08",
+      offsetDays: 0,
+    });
+    expect(res.body.stateVersion).toBe(stateVersion + 1);
+    const snap = (await call<Snapshot>("GET", `/api/enrollments/${id}`)).body;
+    expect(snap.taskStates).toEqual([res.body.record]);
+    expect(snap.stateVersion).toBe(res.body.stateVersion);
+  });
+
+  it("todo clears statusDate and keeps the record and its offset", async () => {
+    const { id } = (await create()).body;
+    db.prepare(
+      `INSERT INTO task_states (enrollment_id, task_id, status, status_date, offset_days, updated_at)
+       VALUES (?, 'intro-to-llms', 'done', '2026-09-07', 2, 'x')`,
+    ).run(id);
+    const res = await put(id, "intro-to-llms", { status: "todo", statusDate: "2026-09-09" });
+    expect(res.status).toBe(200);
+    expect(res.body.record).toMatchObject({ status: "todo", statusDate: null, offsetDays: 2 });
+    const skipped = await put(id, "intro-to-llms", { status: "skipped", statusDate: "2026-09-10" });
+    expect(skipped.body.record).toMatchObject({ status: "skipped", offsetDays: 2 });
+  });
+
+  it("rejects done/skipped without a real statusDate", async () => {
+    const { id } = (await create()).body;
+    for (const body of [
+      { status: "done" },
+      { status: "skipped", statusDate: null },
+      { status: "done", statusDate: "2026-02-30" },
+      { status: "done", statusDate: "9/8/2026" },
+      { status: "finished", statusDate: "2026-09-08" },
+    ]) {
+      const res = await put(id, "intro-to-llms", body);
+      expect(res.status, JSON.stringify(body)).toBe(400);
+      expect(res.body).toMatchObject({ error: { code: "bad-request" } });
+    }
+  });
+
+  it("404 for an unknown Task or Enrollment, 409 task-removed for a tombstoned Task", async () => {
+    const { id } = (await create()).body;
+    const ok = { status: "done", statusDate: "2026-09-08" };
+    expect((await put(id, "no-such-task", ok)).status).toBe(404);
+    expect((await put("nope", "intro-to-llms", ok)).status).toBe(404);
+
+    db.prepare(
+      `INSERT INTO tombstones (enrollment_id, task_id, title, kind, former_day, removed_at)
+       VALUES (?, 'gone-task', 'Gone', 'material', 3, 'x')`,
+    ).run(id);
+    const removed = await put(id, "gone-task", ok);
+    expect(removed.status).toBe(409);
+    expect(removed.body).toMatchObject({ error: { code: "task-removed" } });
+    const before = (await call<Snapshot>("GET", `/api/enrollments/${id}`)).body.stateVersion;
+    expect((await put(id, "no-such-task", ok)).status).toBe(404);
+    expect((await call<Snapshot>("GET", `/api/enrollments/${id}`)).body.stateVersion).toBe(before);
+  });
+});

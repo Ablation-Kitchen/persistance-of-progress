@@ -19,7 +19,7 @@ import {
   transaction,
   type Db,
 } from "../db/index.js";
-import { notFound } from "../errors.js";
+import { ApiError, notFound } from "../errors.js";
 
 interface EnrollmentRow {
   id: string;
@@ -89,6 +89,47 @@ export function setActive(db: Db, id: string | null): void {
     if (id !== null) row(db, id);
     setActiveEnrollmentId(db, id);
     bumpAppStateVersion(db);
+  });
+}
+
+/**
+ * Set one Task's status (spec §4.2, §8.3). `todo` clears `statusDate` but keeps the record and
+ * its offset. A tombstoned Task is frozen (409); an id in neither the path nor the tombstones is
+ * a 404.
+ */
+export function setTaskState(
+  db: Db,
+  id: string,
+  taskId: string,
+  status: TaskStateRecord["status"],
+  statusDate: string | null,
+): { record: TaskStateRecord; stateVersion: number } {
+  return transaction(db, () => {
+    const r = row(db, id);
+    const removed = db
+      .prepare("SELECT 1 FROM tombstones WHERE enrollment_id = ? AND task_id = ?")
+      .get(id, taskId);
+    if (removed)
+      throw new ApiError(409, "task-removed", `Task ${taskId} was removed from the path`);
+    const path = JSON.parse(r.path_json) as LearningPath;
+    if (!allTasks(path).some((p) => p.task.id === taskId)) throw notFound(`Task ${taskId}`);
+
+    const date = status === "todo" ? null : statusDate;
+    const updatedAt = nowIso();
+    const saved = db
+      .prepare(
+        `INSERT INTO task_states (enrollment_id, task_id, status, status_date, offset_days, updated_at)
+         VALUES (?, ?, ?, ?, 0, ?)
+         ON CONFLICT (enrollment_id, task_id) DO UPDATE SET
+           status = excluded.status, status_date = excluded.status_date, updated_at = excluded.updated_at
+         RETURNING offset_days`,
+      )
+      .get(id, taskId, status, date, updatedAt) as { offset_days: number };
+    const { stateVersion } = bumpEnrollmentVersion(db, id);
+    return {
+      record: { taskId, status, statusDate: date, offsetDays: saved.offset_days, updatedAt },
+      stateVersion,
+    };
   });
 }
 

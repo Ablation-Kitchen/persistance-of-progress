@@ -1,6 +1,6 @@
 /** Request and response contracts for the routes of spec §8.3 (TypeBox, shared by server and web). */
 import { Type, type Static } from "typebox";
-import { PlainDate, Timestamp } from "./snapshot.js";
+import { PlainDate, TaskStateRecord, TaskStatus, Timestamp } from "./snapshot.js";
 
 /** Version of the JSON Backup format (spec §9.2). */
 export const BACKUP_FORMAT_VERSION = 1;
@@ -96,3 +96,19 @@ export const PatchEnrollmentBody = Type.Object({ startDate: PlainDate });
 export type PatchEnrollmentBody = Static<typeof PatchEnrollmentBody>;
 
 export const EnrollmentParams = Type.Object({ id: Type.String() });
+
+export const TaskStateParams = Type.Object({ id: Type.String(), taskId: Type.String() });
+export type TaskStateParams = Static<typeof TaskStateParams>;
+
+/** `todo` clears `statusDate`; `done` and `skipped` require it (spec §8.3). */
+export const SetTaskStateBody = Type.Object(
+  { status: TaskStatus, statusDate: Type.Optional(Type.Union([PlainDate, Type.Null()])) },
+  { additionalProperties: false },
+);
+export type SetTaskStateBody = Static<typeof SetTaskStateBody>;
+
+export const TaskStateResponse = Type.Object({
+  record: TaskStateRecord,
+  stateVersion: Type.Integer({ minimum: 0 }),
+});
+export type TaskStateResponse = Static<typeof TaskStateResponse>;

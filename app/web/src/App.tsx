@@ -5,7 +5,8 @@ import { StartPage } from "./enroll/StartPage";
 import { Header } from "./Header";
 import { useApp, useEnrollments } from "./queries";
 import { Placeholder } from "./routes/Placeholder";
-import { TodayPlaceholder } from "./routes/TodayPlaceholder";
+import { ToastProvider } from "./toast";
+import { TodayScreen } from "./today/TodayScreen";
 
 /**
  * Landing logic (spec §7.2): with an active Enrollment, show the screen; with none, the switcher
@@ -22,7 +23,7 @@ function RequireActive({ children }: { children: ReactNode }) {
 
 export function App() {
   return (
-    <>
+    <ToastProvider>
       <Header />
       <main className="wrap">
         <Routes>
@@ -31,7 +32,7 @@ export function App() {
             path="/today"
             element={
               <RequireActive>
-                <TodayPlaceholder />
+                <TodayScreen />
               </RequireActive>
             }
           />
@@ -55,6 +56,6 @@ export function App() {
           <Route path="*" element={<Navigate to="/today" replace />} />
         </Routes>
       </main>
-    </>
+    </ToastProvider>
   );
 }

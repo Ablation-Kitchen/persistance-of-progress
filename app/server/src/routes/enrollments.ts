@@ -5,7 +5,10 @@ import {
   EnrollmentParams,
   EnrollmentSummary,
   PatchEnrollmentBody,
+  SetTaskStateBody,
   Snapshot,
+  TaskStateParams,
+  TaskStateResponse,
   UPLOAD_LIMIT_BYTES,
   type PathSource,
 } from "@learning-tracker/core";
@@ -16,9 +19,10 @@ import {
   deleteEnrollment,
   listEnrollments,
   setStartDate,
+  setTaskState,
   snapshot,
 } from "../enrollments/repo.js";
-import { requireDate } from "../errors.js";
+import { ApiError, requireDate } from "../errors.js";
 import { loadOrThrow, type PathScanner } from "../paths/scan.js";
 
 /** Read a `source` (a `/paths` file or an upload) and load it, or throw 404 / 422. */
@@ -70,6 +74,26 @@ export function enrollmentRoutes(fastify: FastifyInstance, db: Db, scanner: Path
     async (request, reply) => {
       deleteEnrollment(db, request.params.id);
       return reply.code(204).send();
+    },
+  );
+
+  app.put(
+    "/api/enrollments/:id/tasks/:taskId/state",
+    {
+      schema: {
+        params: TaskStateParams,
+        body: SetTaskStateBody,
+        response: { 200: TaskStateResponse },
+      },
+    },
+    async (request) => {
+      const { status, statusDate } = request.body;
+      let date: string | null = null;
+      if (status !== "todo") {
+        if (!statusDate) throw new ApiError(400, "bad-request", `${status} requires statusDate`);
+        date = requireDate(statusDate, "statusDate");
+      }
+      return setTaskState(db, request.params.id, request.params.taskId, status, date);
     },
   );
 }

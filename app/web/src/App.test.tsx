@@ -25,8 +25,11 @@ async function startFixture(dateLabel?: "Today") {
   const dialog = await screen.findByRole("dialog");
   if (dateLabel) fireEvent.click(within(dialog).getByRole("button", { name: dateLabel }));
   fireEvent.click(within(dialog).getByRole("button", { name: "Start" }));
-  await screen.findByRole("heading", { level: 1, name: "Today" });
+  await screen.findByRole("heading", { level: 1, name: TODAY_H1 });
 }
+
+/** The Today screen's h1 in any of its states (during, before the start, after the end). */
+const TODAY_H1 = /^(Today|Almost ready|You finished it)\.$/;
 
 describe("first run", () => {
   it("empty state → fixture listed → start date → Today for the new active Enrollment", async () => {
@@ -50,8 +53,8 @@ describe("first run", () => {
     expect(input.value).toBe(today);
     fireEvent.click(within(dialog).getByRole("button", { name: "Start" }));
 
-    expect(await screen.findByRole("heading", { level: 1, name: "Today" })).toBeTruthy();
-    await screen.findByText(new RegExp(`from ${today}`));
+    expect(await screen.findByRole("heading", { level: 1, name: "Today." })).toBeTruthy();
+    await screen.findByText(/^day 1 · week 1 of 17 · /);
   });
 
   it("an invalid file shows its issues and can't be picked", async () => {
@@ -80,7 +83,7 @@ describe("first run", () => {
     });
     const dialog = await screen.findByRole("dialog");
     fireEvent.click(within(dialog).getByRole("button", { name: "Start" }));
-    expect(await screen.findByRole("heading", { level: 1, name: "Today" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { level: 1, name: TODAY_H1 })).toBeTruthy();
   });
 });
 
@@ -131,7 +134,7 @@ describe("switcher and delete", () => {
 
 describe("app shell", () => {
   it.each([
-    ["/today", "Today"],
+    ["/today", TODAY_H1],
     ["/path", "Path"],
     ["/notes", "Notes"],
   ])(
@@ -142,7 +145,8 @@ describe("app shell", () => {
       cleanup();
       renderApp(url);
       expect(await screen.findByRole("heading", { level: 1, name: title })).toBeTruthy();
-      expect(screen.getByRole("link", { name: title }).className).toContain("on");
+      const link = typeof title === "string" ? title : "Today";
+      expect(screen.getByRole("link", { name: link }).className).toContain("on");
     },
   );
 
