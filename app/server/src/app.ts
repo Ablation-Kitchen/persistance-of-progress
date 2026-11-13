@@ -4,20 +4,26 @@ import Fastify, { type FastifyServerOptions } from "fastify";
 import fastifyStatic from "@fastify/static";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import { HealthResponse } from "@learning-tracker/core";
+import { userVersion, type Db } from "./db/index.js";
 
 export interface AppOptions {
   /** Directory holding the built frontend (`web/dist`). Missing is fine: only the API is served. */
   webDist: string;
+  /** Open, migrated database. The app closes it on `close()`. */
+  db: Db;
   logger?: FastifyServerOptions["logger"];
 }
 
-export async function buildApp({ webDist, logger = false }: AppOptions) {
+export async function buildApp({ webDist, db, logger = false }: AppOptions) {
   // Request logs are at info level; main.ts runs the logger at warn, so they stay quiet.
   const app = Fastify({ logger }).withTypeProvider<TypeBoxTypeProvider>();
+  app.addHook("onClose", async () => {
+    if (db.isOpen) db.close();
+  });
 
   app.get("/api/health", { schema: { response: { 200: HealthResponse } } }, async () => ({
     ok: true as const,
-    dbVersion: 0,
+    dbVersion: userVersion(db),
   }));
 
   const hasWeb = existsSync(path.join(webDist, "index.html"));

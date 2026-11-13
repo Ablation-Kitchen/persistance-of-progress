@@ -26,6 +26,7 @@ RUN npm ci --omit=dev --workspace=core --workspace=server && npm cache clean --f
 COPY --from=build /app/core/dist core/dist
 COPY --from=build /app/core/schema core/schema
 COPY --from=build /app/server/dist server/dist
+COPY --from=build /app/server/migrations server/migrations
 COPY --from=build /app/web/dist web/dist
 RUN mkdir /data && chown node:node /data
 USER node

@@ -3,27 +3,31 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { buildApp } from "./app.js";
+import { openAndMigrate } from "./db/index.js";
 
 let webDist: string;
+let dataDir: string;
 let app: Awaited<ReturnType<typeof buildApp>>;
 
 beforeAll(async () => {
   webDist = mkdtempSync(path.join(tmpdir(), "lt-web-"));
   writeFileSync(path.join(webDist, "index.html"), "<!doctype html><title>shell</title>");
   writeFileSync(path.join(webDist, "app.js"), "console.log(1)");
-  app = await buildApp({ webDist });
+  dataDir = mkdtempSync(path.join(tmpdir(), "lt-data-"));
+  app = await buildApp({ webDist, db: openAndMigrate(dataDir).db });
 });
 
 afterAll(async () => {
   await app.close();
   rmSync(webDist, { recursive: true, force: true });
+  rmSync(dataDir, { recursive: true, force: true });
 });
 
 describe("server scaffold", () => {
-  it("GET /api/health returns ok and dbVersion 0", async () => {
+  it("GET /api/health returns ok and the real dbVersion", async () => {
     const res = await app.inject({ method: "GET", url: "/api/health" });
     expect(res.statusCode).toBe(200);
-    expect(res.json()).toEqual({ ok: true, dbVersion: 0 });
+    expect(res.json()).toEqual({ ok: true, dbVersion: 1 });
   });
 
   it.each(["/", "/today", "/notes", "/path?block=2&filter=open"])(
