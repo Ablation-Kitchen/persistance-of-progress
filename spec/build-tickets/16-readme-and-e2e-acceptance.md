@@ -1,6 +1,6 @@
 ---
 title: "README and end-to-end acceptance"
-status: open
+status: closed
 blocked_by: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
 ---
 
@@ -19,11 +19,12 @@ blocked_by: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
 
 ## Acceptance: the 17-week walkthrough
 
-- [ ] First run: empty state → load the fixture → start date = next Monday → "Almost ready".
-- [ ] Advance the clock to day 1: tick two Tasks and write a Day Note. The streak is 1.
-- [ ] Advance to week 4 without ticking: Catch up lists the overdue Tasks. Shift +2; Catch up empties for Tasks now in their windows. The Path screen shows the shift marker once.
-- [ ] Open the story bank: the template shows, and after typing the Note is "from template".
-- [ ] Edit the fixture in `./paths` (remove a done Task that has a Note): the banner appears → preview → apply. The Note is under Notes → Removed tasks.
-- [ ] Export Notes: the file downloads with the expected name, and its outline is Block → week → day.
-- [ ] Download a Backup → `docker compose down -v && up` → Restore → every screen matches the state before the wipe.
+- [x] First run: empty state → load the fixture → start date = next Monday → "Almost ready".
+- [x] Advance the clock to day 1: tick two Tasks and write a Day Note. The streak is 1.
+- [x] Advance to week 4 without ticking: Catch up lists the overdue Tasks. Shift +2; Catch up empties for Tasks now in their windows. The Path screen shows the shift marker once.
+- [x] Open the story bank: the template shows, and after typing the Note is "from template".
+- [x] Edit the fixture in `./paths` (remove a done Task that has a Note): the banner appears → preview → apply. The Note is under Notes → Removed tasks.
+- [x] Export Notes: the file downloads with the expected name, and its outline is Block → week → day.
+- [x] Download a Backup → `docker compose down -v && up` → Restore → every screen matches the state before the wipe.
 - [ ] Throughout: no console errors, and every API error shows a toast or a dialog with the server's message.
+  - No console errors: verified by the e2e run. API errors → toast/dialog: the walkthrough triggers none, so this rests on the web UI tests (rollback toast; shift, reload, restore, preview-stale dialogs; Note save errors).
