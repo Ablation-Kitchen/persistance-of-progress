@@ -1,6 +1,6 @@
 ---
 title: "JSON Backup and restore"
-status: open
+status: closed
 blocked_by: [8, 9, 13]
 ---
 
@@ -25,7 +25,7 @@ blocked_by: [8, 9, 13]
 
 ## Acceptance
 
-- [ ] **Round trip:** seed the week-4 + shift + tombstones scenario with Notes, back up, wipe the volume, restore from the empty state. Every screen shows the same data, including shift undo eligibility and Removed tasks.
-- [ ] `formatVersion: 2` → 422 `backup-too-new`. A Note pointing at an unknown Task → 422 with a pointer. Nothing is written in either case.
-- [ ] A forced failure halfway through the restore transaction leaves the old data intact, and `pre-restore-*.json` exists.
-- [ ] The hint changes from "never" to "today" after a download, and four restores leave 3 Safety Copies.
+- [x] **Round trip:** seed the week-4 + shift + tombstones scenario with Notes, back up, wipe the volume, restore from the empty state. Every screen shows the same data, including shift undo eligibility and Removed tasks.
+- [x] `formatVersion: 2` → 422 `backup-too-new`. A Note pointing at an unknown Task → 422 with a pointer. Nothing is written in either case.
+- [x] A forced failure halfway through the restore transaction leaves the old data intact, and `pre-restore-*.json` exists.
+- [x] The hint changes from "never" to "today" after a download, and four restores leave 3 Safety Copies.
