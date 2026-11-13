@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router";
 import {
   currentBlockIndex,
@@ -13,6 +13,7 @@ import {
 import { useApp, useEnrollment, useSetTaskState } from "../queries";
 import { shortDate, useToday } from "../today";
 import { useNotes } from "../notes/api";
+import { ResourceIndex } from "./ResourceIndex";
 import { PathRow, useTodayLink } from "./PathRow";
 
 export const FILTERS = ["all", "open", "overdue", "optional", "done"] as const;
@@ -61,6 +62,18 @@ function PathView({ snapshot }: { snapshot: Snapshot }) {
     () => new Set([currentBlockIndex(snapshot, today)]),
   );
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
+  // A Resource Index chip opens its Task: its Block open, the filter off, the row expanded,
+  // then scrolled into view once that render has committed.
+  const jumpTarget = useRef<string | null>(null);
+  useEffect(() => {
+    const id = jumpTarget.current;
+    if (!id) return;
+    jumpTarget.current = null;
+    document.querySelector(`.prow[data-task="${id}"]`)?.scrollIntoView?.({
+      behavior: "smooth",
+      block: "center",
+    });
+  });
   const setState = useSetTaskState(snapshot.id).mutate;
   const todayLink = useTodayLink();
 
@@ -79,6 +92,16 @@ function PathView({ snapshot }: { snapshot: Snapshot }) {
     const next = new Set(set);
     if (!next.delete(x)) next.add(x);
     return next;
+  };
+
+  const jumpTo = (taskId: string) => {
+    const blockIndex = outline.find((b) =>
+      b.weeks.some((w) => w.tasks.some((v) => v.task.id === taskId)),
+    )?.blockIndex;
+    if (blockIndex !== undefined) setOpenBlocks((o) => new Set(o).add(blockIndex));
+    setFilter("all");
+    setExpanded((e) => new Set(e).add(taskId));
+    jumpTarget.current = taskId;
   };
 
   const row = (v: TaskView) => (
@@ -179,8 +202,9 @@ function PathView({ snapshot }: { snapshot: Snapshot }) {
 
           <Removed snapshot={snapshot} />
         </div>
-        {/* The Resource Index fills this column in ticket 11. */}
-        <aside className="path-side" aria-label="Resource index" />
+        <aside className="path-side" aria-label="Resource index">
+          <ResourceIndex snapshot={snapshot} today={today} onJump={jumpTo} />
+        </aside>
       </div>
     </div>
   );
