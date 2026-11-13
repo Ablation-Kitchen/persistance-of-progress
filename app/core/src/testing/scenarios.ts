@@ -3,6 +3,8 @@
  * different points in the run. Deterministic: history is seeded from a hash of each Task id.
  */
 import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import type { NoteMeta, Shift, Snapshot, TaskStateRecord, Tombstone } from "../api/snapshot.js";
 import { addDays } from "../dates/dates.js";
 import { allTasks, dueDayOf } from "../path/helpers.js";
@@ -12,10 +14,12 @@ import type { LearningPath } from "../path/types.js";
 export const FIXTURE_START = "2026-09-07"; // a Monday
 
 export function fixturePath(): { path: LearningPath; hash: string } {
-  const text = readFileSync(
-    new URL("../../../paths/eval-infra-17-weeks.yaml", import.meta.url),
-    "utf8",
+  // A plain path, not a URL object: under jsdom (web tests) `URL` is jsdom's, which fs rejects.
+  const file = resolve(
+    dirname(fileURLToPath(import.meta.url)),
+    "../../../paths/eval-infra-17-weeks.yaml",
   );
+  const text = readFileSync(file, "utf8");
   const result = loadPath(text, { source: "yaml" });
   if (!result.ok) throw new Error("fixture must load");
   return { path: result.path, hash: result.hash };

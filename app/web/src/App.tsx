@@ -4,6 +4,7 @@ import { PickEnrollment } from "./enroll/Switcher";
 import { StartPage } from "./enroll/StartPage";
 import { Header } from "./Header";
 import { useApp, useEnrollments } from "./queries";
+import { PathScreen } from "./path/PathScreen";
 import { Placeholder } from "./routes/Placeholder";
 import { ToastProvider } from "./toast";
 import { TodayScreen } from "./today/TodayScreen";
@@ -40,7 +41,7 @@ export function App() {
             path="/path"
             element={
               <RequireActive>
-                <Placeholder title="Path" />
+                <PathScreen />
               </RequireActive>
             }
           />

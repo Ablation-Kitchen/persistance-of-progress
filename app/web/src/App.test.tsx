@@ -134,18 +134,17 @@ describe("switcher and delete", () => {
 
 describe("app shell", () => {
   it.each([
-    ["/today", TODAY_H1],
-    ["/path", "Path"],
-    ["/notes", "Notes"],
+    ["/today", TODAY_H1, "Today"],
+    ["/path", "The path.", "Path"],
+    ["/notes", "Notes", "Notes"],
   ])(
     "%s shows its screen and marks the nav link once an Enrollment is active",
-    async (url, title) => {
+    async (url, title, link) => {
       renderApp("/");
       await startFixture();
       cleanup();
       renderApp(url);
       expect(await screen.findByRole("heading", { level: 1, name: title })).toBeTruthy();
-      const link = typeof title === "string" ? title : "Today";
       expect(screen.getByRole("link", { name: link }).className).toContain("on");
     },
   );
