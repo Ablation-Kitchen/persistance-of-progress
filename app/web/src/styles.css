@@ -1600,3 +1600,11 @@ mark {
 .tl-i .note-clip {
   font-size: 14px;
 }
+
+/* Notes export (ticket 14) */
+.export-row {
+  margin: 18px 0 0;
+}
+.export-notes:hover {
+  text-decoration: none;
+}

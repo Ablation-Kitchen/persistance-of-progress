@@ -4,3 +4,5 @@ coverage
 package-lock.json
 paths/*.yaml
 core/schema
+# Golden files are compared byte for byte
+*.golden.md

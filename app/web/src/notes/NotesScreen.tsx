@@ -16,6 +16,7 @@ import { useApp, useEnrollment } from "../queries";
 import { shortDate, useToday } from "../today";
 import { useNotes } from "./api";
 import { NoteDrawer } from "./Drawer";
+import { ExportButton } from "./ExportButton";
 import { NoteView } from "./NoteView";
 
 /** The Notes screen for the active Enrollment (spec §7.5). */
@@ -310,6 +311,9 @@ function NotesView({
           <h1 className="serif">
             Notes, <em>by block</em>.
           </h1>
+          <p className="export-row">
+            <ExportButton snapshot={snapshot} today={today} />
+          </p>
         </div>
         <dl className="stats">
           {(
