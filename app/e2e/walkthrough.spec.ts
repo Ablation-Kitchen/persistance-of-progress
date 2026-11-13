@@ -31,23 +31,37 @@ async function openMenu(page: Page) {
   return page.getByRole("menu");
 }
 
-/** The visible text of a screen's main area, for before/after comparisons. */
+/**
+ * The visible text of a screen, for before/after comparisons: everything except the toast slot,
+ * so the header (active Enrollment) and the reload banner are compared too.
+ */
 async function screenText(page: Page, url: string, h1: string | RegExp) {
   await page.goto(url);
   await expect(page.getByRole("heading", { level: 1, name: h1 })).toBeVisible();
   await page.waitForLoadState("networkidle");
-  return page.locator("main").innerText();
+  return page.evaluate(() => {
+    const root = document.getElementById("root")!.cloneNode(true) as HTMLElement;
+    root.querySelector(".toast-slot")?.remove();
+    document.body.append(root); // innerText needs the clone laid out
+    const text = root.innerText;
+    root.remove();
+    return text;
+  });
 }
 
 test("the 17-week walkthrough", async ({ page }) => {
   const consoleErrors: string[] = [];
+  // Set only while a step provokes API errors on purpose; the browser logs those loads too.
+  let expectingApiErrors = false;
   const apiErrors: string[] = [];
   page.on("console", (m) => {
-    if (m.type() === "error") consoleErrors.push(m.text());
+    if (m.type() !== "error") return;
+    if (expectingApiErrors && m.text().startsWith("Failed to load resource")) return;
+    consoleErrors.push(m.text());
   });
   page.on("pageerror", (e) => consoleErrors.push(`pageerror: ${e.message}`));
   page.on("response", (r) => {
-    if (r.url().includes("/api/") && r.status() >= 400) {
+    if (!expectingApiErrors && r.url().includes("/api/") && r.status() >= 400) {
       apiErrors.push(`${r.status()} ${r.request().method()} ${r.url()}`);
     }
   });
@@ -114,11 +128,13 @@ test("the 17-week walkthrough", async ({ page }) => {
     const before = await catchUp.locator("article[data-task]").evaluateAll((els) =>
       els.map((e) => ({
         id: e.getAttribute("data-task")!,
-        overdue: Number(/(\d+)d overdue/.exec(e.textContent ?? "")?.[1] ?? 0),
+        overdue: /(\d+)d overdue/.exec(e.textContent ?? "")?.[1] ?? null,
       })),
     );
+    // A card whose overdue count can't be read would make the expectations below vacuous.
+    expect(before.filter((t) => t.overdue === null)).toEqual([]);
     expect(before.length).toBeGreaterThan(0);
-    expect(before.some((t) => t.overdue <= 2)).toBe(true);
+    expect(before.some((t) => Number(t.overdue) <= 2)).toBe(true);
 
     const control = catchUp.getByRole("group", { name: "Schedule shift" });
     await control.getByLabel("shift open tasks by").fill("2");
@@ -128,7 +144,7 @@ test("the 17-week walkthrough", async ({ page }) => {
     // Tasks that were at most 2 days overdue are back inside their windows.
     await expect
       .poll(() => taskIds(catchUp))
-      .toEqual(before.filter((t) => t.overdue > 2).map((t) => t.id));
+      .toEqual(before.filter((t) => Number(t.overdue) > 2).map((t) => t.id));
 
     await page.goto("/path");
     await expect(page.getByRole("heading", { level: 1, name: "The path." })).toBeVisible();
@@ -159,7 +175,9 @@ test("the 17-week walkthrough", async ({ page }) => {
     await expect(page.getByText("The path file has changed")).toBeVisible({ timeout: 70_000 });
     await page.getByRole("button", { name: "Review reload" }).click();
     const dialog = page.getByRole("dialog", { name: "Review reload" });
-    await expect(region(page, "Removed").getByText(removed.title)).toBeVisible();
+    await expect(
+      dialog.getByRole("region", { name: "Removed", exact: true }).getByText(removed.title),
+    ).toBeVisible();
     await expect(dialog.getByText(/1 removed task will be kept hidden/)).toBeVisible();
     await dialog.getByRole("button", { name: "Reload" }).click();
     await expect(page.getByText("Path reloaded")).toBeVisible();
@@ -229,6 +247,46 @@ test("the 17-week walkthrough", async ({ page }) => {
     for (const [i, [url, h1]] of screens.entries()) {
       expect(await screenText(page, url, h1), url).toBe(before[i]);
     }
+  });
+
+  await test.step("API errors: the server's message in a dialog; a failed save → toast", async () => {
+    expectingApiErrors = true;
+    // A real 422 from the server: a file that isn't a backup.
+    const preview = page.waitForResponse((r) => r.url().endsWith("/api/restore/preview"));
+    const menu = await openMenu(page);
+    await menu.getByLabel("Restore…").setInputFiles({
+      name: "not-a-backup.json",
+      mimeType: "application/json",
+      buffer: Buffer.from(JSON.stringify({ hello: "world" })),
+    });
+    const res = await preview;
+    expect(res.status()).toBe(422); // backup-invalid
+    const { message } = ((await res.json()) as { error: { message: string } }).error;
+    expect(message).toBeTruthy();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.getByRole("alert")).toContainText(message);
+    await dialog.getByRole("button", { name: "Close" }).click();
+
+    // A failed optimistic tick (the server is made to fail it) rolls back and shows a toast.
+    await page.goto("/today");
+    const today = region(page, "Today");
+    await expect(today.locator("article[data-task]").first()).toBeVisible();
+    const [id] = (await taskIds(today)) as string[];
+    // Pinned by id: ticking can reorder the cards, so `.first()` could move to another Task.
+    const check = today.locator(`article[data-task="${id}"] .check`);
+    const was = await check.getAttribute("aria-pressed");
+    await page.route("**/api/enrollments/*/tasks/*/state", (route) =>
+      route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({ error: { code: "internal", message: "injected failure" } }),
+      }),
+    );
+    await check.click();
+    await expect(page.getByRole("status")).toContainText("Couldn't save, try again");
+    await expect(check).toHaveAttribute("aria-pressed", was!);
+    await page.unroute("**/api/enrollments/*/tasks/*/state");
+    expectingApiErrors = false;
   });
 
   await test.step("throughout: no console errors and no failed API calls", async () => {

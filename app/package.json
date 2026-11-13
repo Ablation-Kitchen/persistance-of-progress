@@ -30,6 +30,7 @@
     "prettier": "^3.6.0",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.0",
-    "vitest": "^4.0.0"
+    "vitest": "^4.0.0",
+    "yaml": "^2.9.1"
   }
 }

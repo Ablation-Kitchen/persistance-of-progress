@@ -26,5 +26,5 @@ blocked_by: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
 - [x] Edit the fixture in `./paths` (remove a done Task that has a Note): the banner appears → preview → apply. The Note is under Notes → Removed tasks.
 - [x] Export Notes: the file downloads with the expected name, and its outline is Block → week → day.
 - [x] Download a Backup → `docker compose down -v && up` → Restore → every screen matches the state before the wipe.
-- [ ] Throughout: no console errors, and every API error shows a toast or a dialog with the server's message.
-  - No console errors: verified by the e2e run. API errors → toast/dialog: the walkthrough triggers none, so this rests on the web UI tests (rollback toast; shift, reload, restore, preview-stale dialogs; Note save errors).
+- [x] Throughout: no console errors, and every API error shows a toast or a dialog with the server's message.
+  - The e2e run fails on any console error or unexpected API error. Its "API errors" step restores a file that isn't a backup (the server's real 422 message shows in the dialog) and fails a tick with an injected 500 (toast, and the tick rolls back). The other error dialogs (shift, reload, preview-stale, Note save) are covered by the web UI tests.

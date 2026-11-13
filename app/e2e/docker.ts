@@ -7,6 +7,7 @@ import { execFileSync } from "node:child_process";
 import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { YAMLMap, isMap, parseDocument, visit } from "yaml";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -19,17 +20,15 @@ export const TMP_PATHS = path.join(TMP, "paths");
 export const FIXTURE_NAME = "eval-infra-17-weeks.yaml";
 const FIXTURE = path.join(here, "..", "paths", FIXTURE_NAME);
 
-function assertProject() {
-  const declared = /^name:\s*(\S+)\s*$/m.exec(readFileSync(COMPOSE_FILE, "utf8"))?.[1];
-  if (PROJECT !== "lt-e2e" || declared !== PROJECT) {
-    throw new Error(`refusing to run docker compose: project is ${PROJECT}/${declared}`);
-  }
-}
-
 export function compose(...args: string[]) {
-  assertProject();
+  const declared = /^name:\s*(\S+)\s*$/m.exec(readFileSync(COMPOSE_FILE, "utf8"))?.[1];
+  if (declared !== PROJECT) {
+    throw new Error(`refusing to run docker compose: the e2e compose file declares ${declared}`);
+  }
   execFileSync("docker", ["compose", "-p", PROJECT, "-f", COMPOSE_FILE, ...args], {
     stdio: "inherit",
+    // compose.e2e.yaml reads the host port from here, so Playwright and the container agree.
+    env: { ...process.env, E2E_PORT: String(PORT) },
   });
 }
 
@@ -37,7 +36,6 @@ export const up = () => compose("up", "-d", "--build", "--wait");
 
 /** `down -v` for the e2e project only: wipes `lt-e2e_appdata`, nothing else. */
 export function downWipe(extra: string[] = []) {
-  assertProject();
   compose("down", "-v", ...extra);
 }
 
@@ -48,23 +46,21 @@ export function resetPaths() {
   cpSync(FIXTURE, path.join(TMP_PATHS, FIXTURE_NAME));
 }
 
-/**
- * Remove one Task from the temporary fixture copy: its `- id:` line and every following line
- * indented deeper than the dash (or blank).
- */
+/** Remove one Task, by id, from the temporary fixture copy (comments and layout kept). */
 export function removeTaskFromFixture(taskId: string) {
   const file = path.join(TMP_PATHS, FIXTURE_NAME);
-  const lines = readFileSync(file, "utf8").split("\n");
-  const start = lines.findIndex((l) => new RegExp(`^\\s*- id: ${taskId}\\s*$`).test(l));
-  if (start < 0) throw new Error(`task ${taskId} not found in the fixture copy`);
-  const dash = lines[start]!.indexOf("-");
-  let end = start + 1;
-  while (end < lines.length) {
-    const l = lines[end]!;
-    const indent = l.length - l.trimStart().length;
-    if (l.trim() !== "" && indent <= dash) break;
-    end++;
-  }
-  lines.splice(start, end - start);
-  writeFileSync(file, lines.join("\n"));
+  const doc = parseDocument(readFileSync(file, "utf8"));
+  let found = 0;
+  visit(doc, {
+    Seq(_key, seq) {
+      const before = seq.items.length;
+      seq.items = seq.items.filter(
+        (item) => !(isMap(item) && (item as YAMLMap).get("id") === taskId),
+      );
+      found += before - seq.items.length;
+    },
+  });
+  if (found !== 1)
+    throw new Error(`expected one task ${taskId} in the fixture copy, found ${found}`);
+  writeFileSync(file, doc.toString());
 }

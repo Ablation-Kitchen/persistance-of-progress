@@ -89,7 +89,8 @@ describe("Task Note from a template", () => {
     fireEvent.click(within(section("Task note")).getByRole("button", { name: "Preview" }));
     const table = within(section("Task note")).getByRole("table");
     expect(within(table).getByText("Posting bullet")).toBeTruthy();
-  });
+    // A deliberate 1 s wait plus the autosave debounce: over Vitest's 5 s default on a slow run.
+  }, 15_000);
 });
 
 describe("autosave", () => {

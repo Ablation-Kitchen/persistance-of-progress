@@ -95,6 +95,18 @@ function withRecord(s: Snapshot, taskId: string, record: TaskStateRecord | null)
   return { ...s, taskStates: record ? [...rest, record] : rest };
 }
 
+/**
+ * Whether the cache still holds our optimistic record. By value, not identity: `setQueryData`
+ * shares structure, so a record replacing an existing one at the same index is stored as a copy.
+ */
+const isOurs = (now: TaskStateRecord | undefined, ours: TaskStateRecord | undefined) =>
+  !!now &&
+  !!ours &&
+  now.status === ours.status &&
+  now.statusDate === ours.statusDate &&
+  now.offsetDays === ours.offsetDays &&
+  now.updatedAt === ours.updatedAt;
+
 export interface TaskStateChange {
   taskId: string;
   status: TaskStatus;
@@ -136,7 +148,7 @@ export function useSetTaskState(enrollmentId: string) {
       // Roll back only if no later change to this Task has replaced ours.
       qc.setQueryData<Snapshot>(key, (s) => {
         const now = s?.taskStates.find((r) => r.taskId === taskId);
-        return s && ctx && now === ctx.optimistic ? withRecord(s, taskId, ctx.previous) : s;
+        return s && ctx && isOurs(now, ctx.optimistic) ? withRecord(s, taskId, ctx.previous) : s;
       });
       toast("Couldn't save, try again");
     },
@@ -144,7 +156,7 @@ export function useSetTaskState(enrollmentId: string) {
       qc.setQueryData<Snapshot>(key, (s) => {
         if (!s) return s;
         const now = s.taskStates.find((r) => r.taskId === record.taskId);
-        const next = now === ctx?.optimistic ? withRecord(s, record.taskId, record) : s;
+        const next = isOurs(now, ctx?.optimistic) ? withRecord(s, record.taskId, record) : s;
         return { ...next, stateVersion: Math.max(s.stateVersion, stateVersion) };
       });
     },

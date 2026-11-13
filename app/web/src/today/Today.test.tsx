@@ -139,6 +139,27 @@ describe("Today at week 4", () => {
     expect((await getSnapshot()).taskStates).toEqual([]);
   });
 
+  it("rolls back a failed untick of a Task that already has a state record", async () => {
+    await open(`/today?today=${WEEK4}`);
+    const taskId = idsIn(column("Today"))[0]!;
+    fireEvent.click(checkOf(column("Today"), taskId));
+    await waitFor(async () =>
+      expect((await getSnapshot()).taskStates.map((r) => r.status)).toEqual(["done"]),
+    );
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = (input, init) =>
+      init?.method === "PUT"
+        ? Promise.reject(new TypeError("Failed to fetch"))
+        : realFetch(input, init);
+    try {
+      fireEvent.click(checkOf(column("Today"), taskId));
+      expect(await screen.findByText("Couldn't save, try again")).toBeTruthy();
+      expect(checkOf(column("Today"), taskId).getAttribute("aria-pressed")).toBe("true");
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  });
+
   it("skip and unskip from a card", async () => {
     await open(`/today?today=${WEEK4}`);
     const today = column("Today");

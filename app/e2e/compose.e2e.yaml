@@ -5,9 +5,9 @@ services:
   app:
     build: ..
     init: true
-    ports: ["127.0.0.1:4399:3000"]
+    ports: ["127.0.0.1:${E2E_PORT:?set by e2e/docker.ts}:3000"]
     volumes: ["./.tmp/paths:/paths:ro", "appdata:/data"]
-    environment: { PUBLIC_PORT: "4399" }
+    environment: { PUBLIC_PORT: "${E2E_PORT:?set by e2e/docker.ts}" }
     healthcheck:
       test:
         [

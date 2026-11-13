@@ -6,3 +6,6 @@ paths/*.yaml
 core/schema
 # Golden files are compared byte for byte
 *.golden.md
+e2e/.tmp
+e2e/test-results
+e2e/playwright-report
