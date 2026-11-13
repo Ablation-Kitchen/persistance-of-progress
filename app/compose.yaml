@@ -1,0 +1,18 @@
+services:
+  app:
+    build: .
+    init: true
+    restart: unless-stopped
+    ports: ["127.0.0.1:${PORT:-4321}:3000"]
+    volumes: ["./paths:/paths:ro", "appdata:/data"]
+    # Only used for the "ready at" log line; the container always listens on 3000.
+    environment: { PUBLIC_PORT: "${PORT:-4321}" }
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+volumes: { appdata: {} }

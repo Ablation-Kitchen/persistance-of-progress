@@ -1,0 +1,221 @@
+/* Design tokens (spec §7.1), taken from the Today prototype. */
+:root {
+  --bg: #f7f6f3;
+  --surface: #ffffff;
+  --ink: #111111;
+  --soft: #3b3b38;
+  --meta: #6a6a66;
+  --rule: #e4e2dc;
+  --accent: #e4572e;
+  --accent-text: #b83d1a;
+  --done: #2f6f5e;
+  --shadow: rgba(0, 0, 0, 0.35);
+  --radius-card: 14px;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --font-display: "Instrument Serif", Georgia, serif;
+  --font-body: "Inter Tight", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0c0c0b;
+    --surface: #141413;
+    --ink: #edebe6;
+    --soft: #c7c4bc;
+    --meta: #9a9a95;
+    --rule: #262624;
+    --accent: #ff6a3d;
+    --accent-text: #ff7a52;
+    --done: #6cc2a8;
+    --shadow: rgba(0, 0, 0, 0.8);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0c0c0b;
+  --surface: #141413;
+  --ink: #edebe6;
+  --soft: #c7c4bc;
+  --meta: #9a9a95;
+  --rule: #262624;
+  --accent: #ff6a3d;
+  --accent-text: #ff7a52;
+  --done: #6cc2a8;
+  --shadow: rgba(0, 0, 0, 0.8);
+}
+
+* {
+  box-sizing: border-box;
+}
+html {
+  -webkit-font-smoothing: antialiased;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 16px/1.6 var(--font-body);
+  transition:
+    background-color 0.5s var(--ease),
+    color 0.5s;
+}
+a {
+  color: var(--accent-text);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.mono {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--meta);
+}
+.serif {
+  font-family: var(--font-display);
+  font-weight: 400;
+}
+.wrap {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 40px;
+}
+@media (max-width: 700px) {
+  .wrap {
+    padding: 0 16px;
+  }
+}
+
+/* Header */
+header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--bg);
+  border-bottom: 1px solid var(--rule);
+}
+nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+.brand {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.brand b {
+  color: var(--accent-text);
+  font-weight: 400;
+}
+.navlinks {
+  display: flex;
+  align-items: center;
+  gap: 4px 28px;
+  font-size: 14px;
+  flex-wrap: wrap;
+}
+.navlink {
+  position: relative;
+  padding: 6px 0;
+  color: var(--soft);
+}
+.navlink:hover {
+  text-decoration: none;
+  color: var(--ink);
+}
+.navlink.on {
+  color: var(--ink);
+  font-weight: 500;
+}
+.navlink.on::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: currentColor;
+}
+.navtools {
+  display: flex;
+  gap: 8px;
+}
+
+/* Components */
+.pill {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--surface);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition:
+    transform 0.3s var(--ease),
+    background-color 0.3s,
+    border-color 0.3s;
+}
+.pill:hover {
+  transform: translateY(-1px);
+  border-color: var(--meta);
+}
+.pill.solid {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+  font-weight: 500;
+}
+.pill.sm {
+  min-height: 32px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+.card {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-card);
+  transition:
+    transform 0.3s var(--ease),
+    box-shadow 0.3s var(--ease);
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px -18px var(--shadow);
+}
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--accent);
+  flex: none;
+  display: inline-block;
+}
+
+/* Hero */
+.hero {
+  padding: 56px 0 28px;
+}
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 18px;
+}
+h1 {
+  margin: 0;
+  font-size: clamp(48px, 7vw, 96px);
+  line-height: 1;
+  letter-spacing: -0.025em;
+}
