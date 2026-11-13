@@ -219,3 +219,231 @@ h1 {
   line-height: 1;
   letter-spacing: -0.025em;
 }
+
+/* Shared bits */
+.pill:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+.pill.ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--meta);
+}
+.pill.ghost:hover {
+  color: var(--ink);
+  border-color: var(--rule);
+}
+.pill.danger {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.row.end {
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+.hint {
+  color: var(--meta);
+  font-size: 14px;
+}
+.error {
+  color: var(--accent-text);
+}
+.error p {
+  margin: 8px 0;
+}
+.loading {
+  padding: 56px 0;
+}
+code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+.tag {
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  padding: 1px 8px;
+  white-space: nowrap;
+}
+.tag.ok {
+  color: var(--done);
+  border-color: currentColor;
+}
+.tag.bad {
+  color: var(--accent-text);
+  border-color: currentColor;
+}
+
+/* Issue list */
+.issues {
+  list-style: none;
+  margin: 0;
+  padding: 10px 0 0;
+  font-size: 14px;
+  color: var(--soft);
+}
+.issues li {
+  padding: 4px 0;
+  border-top: 1px solid var(--rule);
+}
+
+/* Start page: Load a path / Upload / Restore */
+.start {
+  display: grid;
+  gap: 36px;
+  padding-bottom: 64px;
+}
+.section-title {
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0 0 12px;
+}
+.path-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.path-item > button {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 16px 18px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 16px;
+  cursor: pointer;
+}
+.path-item > button:focus-visible {
+  outline: 2px solid var(--accent);
+  border-radius: var(--radius-card);
+}
+.path-item > button:disabled {
+  cursor: not-allowed;
+}
+.path-item .tag {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  align-self: center;
+}
+.path-item.invalid {
+  padding-bottom: 12px;
+}
+.path-item.invalid .issues {
+  padding: 0 18px;
+}
+.path-item.invalid:hover {
+  transform: none;
+  box-shadow: none;
+}
+.path-title {
+  font-weight: 500;
+}
+.upload input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+.upload {
+  position: relative;
+  cursor: pointer;
+}
+.upload:focus-within {
+  outline: 2px solid var(--accent);
+}
+
+/* Start-date dialog */
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: rgba(0, 0, 0, 0.35);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+.dialog {
+  width: min(460px, 100%);
+  padding: 24px;
+}
+.dialog:hover {
+  transform: none;
+}
+.dialog h2 {
+  font-size: 32px;
+  line-height: 1.1;
+  margin: 4px 0 20px;
+}
+.dialog .mono {
+  margin: 0;
+}
+.field {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+.field input {
+  font: inherit;
+  color: inherit;
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  padding: 8px 12px;
+}
+
+/* Enrollment switcher */
+.menu {
+  position: relative;
+}
+.menu-pop {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  width: min(420px, calc(100vw - 32px));
+  padding: 14px;
+  z-index: 10;
+  box-shadow: 0 16px 40px -20px var(--shadow);
+}
+.menu-pop:hover {
+  transform: none;
+}
+.menu-pop > .mono {
+  margin: 0 0 6px;
+}
+.enrollments {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+}
+.enrollment {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 10px;
+  padding: 10px 0;
+  border-top: 1px solid var(--rule);
+}
+.enrollment .pick {
+  all: unset;
+  cursor: pointer;
+  display: grid;
+  flex: 1 1 200px;
+}
+.enrollment .pick:focus-visible {
+  outline: 2px solid var(--accent);
+}
+.enrollment.active .path-title::before {
+  content: "● ";
+  color: var(--accent);
+}

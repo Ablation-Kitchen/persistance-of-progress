@@ -9,7 +9,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "predev": "mkdir -p .data",
-    "dev": "DATA_DIR=${DATA_DIR:-.data} tsx watch src/main.ts",
+    "dev": "DATA_DIR=${DATA_DIR:-.data} PATHS_DIR=${PATHS_DIR:-../paths} tsx watch src/main.ts",
     "start": "node dist/main.js"
   },
   "dependencies": {

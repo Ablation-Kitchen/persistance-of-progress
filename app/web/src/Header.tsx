@@ -1,4 +1,5 @@
 import { NavLink } from "react-router";
+import { SwitcherMenu } from "./enroll/Switcher";
 import { ThemeToggle } from "./ThemeToggle";
 
 const links = [
@@ -27,6 +28,7 @@ export function Header() {
           ))}
         </div>
         <div className="navtools">
+          <SwitcherMenu />
           <ThemeToggle />
         </div>
       </nav>

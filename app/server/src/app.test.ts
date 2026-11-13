@@ -14,7 +14,11 @@ beforeAll(async () => {
   writeFileSync(path.join(webDist, "index.html"), "<!doctype html><title>shell</title>");
   writeFileSync(path.join(webDist, "app.js"), "console.log(1)");
   dataDir = mkdtempSync(path.join(tmpdir(), "lt-data-"));
-  app = await buildApp({ webDist, db: openAndMigrate(dataDir).db });
+  app = await buildApp({
+    webDist,
+    db: openAndMigrate(dataDir).db,
+    pathsDir: path.join(dataDir, "no-paths"),
+  });
 });
 
 afterAll(async () => {

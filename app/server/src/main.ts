@@ -10,6 +10,7 @@ const listenPort = Number(process.env.LISTEN_PORT ?? 3000);
 const publicPort = process.env.PUBLIC_PORT ?? String(listenPort);
 
 const dataDir = process.env.DATA_DIR ?? "/data";
+const pathsDir = process.env.PATHS_DIR ?? "/paths";
 
 // Migrations (and any pre-migrate Safety Copy) finish before the server listens.
 const { db, migration } = openAndMigrate(dataDir);
@@ -18,7 +19,12 @@ if (migration.from !== migration.to) {
   console.log(`Database migrated v${migration.from} → v${migration.to}${copy}`);
 }
 
-const app = await buildApp({ webDist, db, logger: { level: process.env.LOG_LEVEL ?? "warn" } });
+const app = await buildApp({
+  webDist,
+  db,
+  pathsDir,
+  logger: { level: process.env.LOG_LEVEL ?? "warn" },
+});
 
 let closing = false;
 async function shutdown(signal: string) {
