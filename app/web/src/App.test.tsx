@@ -136,7 +136,7 @@ describe("app shell", () => {
   it.each([
     ["/today", TODAY_H1, "Today"],
     ["/path", "The path.", "Path"],
-    ["/notes", "Notes", "Notes"],
+    ["/notes", "Notes, by block.", "Notes"],
   ])(
     "%s shows its screen and marks the nav link once an Enrollment is active",
     async (url, title, link) => {
