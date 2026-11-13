@@ -1,6 +1,6 @@
 /** Request and response contracts for the routes of spec §8.3 (TypeBox, shared by server and web). */
 import { Type, type Static } from "typebox";
-import { PlainDate, TaskStateRecord, TaskStatus, Timestamp } from "./snapshot.js";
+import { NoteMeta, PlainDate, TaskStateRecord, TaskStatus, Timestamp } from "./snapshot.js";
 
 /** Version of the JSON Backup format (spec §9.2). */
 export const BACKUP_FORMAT_VERSION = 1;
@@ -112,3 +112,36 @@ export const TaskStateResponse = Type.Object({
   stateVersion: Type.Integer({ minimum: 0 }),
 });
 export type TaskStateResponse = Static<typeof TaskStateResponse>;
+
+// ---------------------------------------------------------------- Notes (ticket 08)
+
+/**
+ * `:target` is URL-encoded and checked by the server (a live or tombstoned Task, a real date,
+ * or `enrollment`); anything else is a 404, so the param is a plain string here.
+ */
+export const NoteParams = Type.Object({ id: Type.String(), target: Type.String() });
+export type NoteParams = Static<typeof NoteParams>;
+
+export const NoteBody = Type.Object({ target: Type.String(), body: Type.String() });
+export type NoteBody = Static<typeof NoteBody>;
+
+export const PutNoteBody = Type.Object(
+  {
+    body: Type.String(),
+    /** The learner's local date of this edit; added to the Note's edit-date trail. */
+    editedOn: PlainDate,
+    /** Honoured only when the save creates the Note. */
+    fromTemplate: Type.Optional(Type.Boolean()),
+  },
+  { additionalProperties: false },
+);
+export type PutNoteBody = Static<typeof PutNoteBody>;
+
+export const PutNoteResponse = Type.Object({
+  meta: NoteMeta,
+  stateVersion: Type.Integer({ minimum: 0 }),
+});
+export type PutNoteResponse = Static<typeof PutNoteResponse>;
+
+export const DeleteNoteResponse = Type.Object({ stateVersion: Type.Integer({ minimum: 0 }) });
+export type DeleteNoteResponse = Static<typeof DeleteNoteResponse>;

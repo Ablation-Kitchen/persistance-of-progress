@@ -9,6 +9,7 @@ import { installErrorHandler } from "./errors.js";
 import { PathScanner } from "./paths/scan.js";
 import { appRoutes } from "./routes/app.js";
 import { enrollmentRoutes } from "./routes/enrollments.js";
+import { noteRoutes } from "./routes/notes.js";
 import { pathRoutes } from "./routes/paths.js";
 
 export interface AppOptions {
@@ -39,6 +40,7 @@ export async function buildApp({ webDist, db, pathsDir, logger = false }: AppOpt
   appRoutes(app, db);
   pathRoutes(app, scanner);
   enrollmentRoutes(app, db, scanner);
+  noteRoutes(app, db);
 
   const hasWeb = existsSync(path.join(webDist, "index.html"));
   if (hasWeb) {

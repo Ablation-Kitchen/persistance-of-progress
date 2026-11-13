@@ -2,7 +2,14 @@ import { useState } from "react";
 import { isDate, type Block, type TaskView } from "@learning-tracker/core";
 import { shortDate } from "../today";
 import { Description, KindLabel, TaskLinks, statusText } from "./TaskCard";
-import type { TaskStateChange } from "../queries";
+import { useApp, type TaskStateChange } from "../queries";
+import { NoteEditor } from "../notes/NoteEditor";
+
+/** A Note editor for the active Enrollment. */
+function ActiveNoteEditor(props: Omit<Parameters<typeof NoteEditor>[0], "enrollmentId">) {
+  const id = useApp().data?.activeEnrollmentId;
+  return id ? <NoteEditor enrollmentId={id} {...props} /> : null;
+}
 
 interface Props {
   selected: TaskView | null;
@@ -32,8 +39,11 @@ export function SidePane({ selected, t, today, noteDate, block, setState, onClos
         <p className="mono">select a task to see details and its note</p>
       )}
       <section className="sec" aria-label="Day note">
-        <p className="mono label">day note · {shortDate(noteDate)}</p>
-        <p className="hint">The note editor isn&apos;t here yet.</p>
+        <ActiveNoteEditor
+          target={`day:${noteDate}`}
+          label={`day note · ${shortDate(noteDate)}`}
+          placeholder="Findings, links, thoughts"
+        />
       </section>
       <section className="sec" aria-label="Block goal">
         <p className="mono label">block goal · {block.title}</p>
@@ -122,8 +132,12 @@ function TaskDetails({
         />
       </label>
       <section className="sec" aria-label="Task note">
-        <p className="mono label">task note</p>
-        <p className="hint">The note editor isn&apos;t here yet.</p>
+        <ActiveNoteEditor
+          target={`task:${id}`}
+          template={v.task.noteTemplate}
+          label="task note"
+          placeholder="What you did, what you found"
+        />
       </section>
     </div>
   );
