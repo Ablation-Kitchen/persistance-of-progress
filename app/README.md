@@ -1,23 +1,30 @@
-# Learning tracker
+# Learning tracker: the app
 
-A locally run tracker for Learning Path files. The full spec is in [`../spec/SPEC.md`](../spec/SPEC.md).
-
-> Scaffold stage (build ticket 01). The full README arrives with ticket 16.
-
-## Run
-
-```sh
-cp .env.example .env    # optional: change PORT
-docker compose up --build
-```
-
-Then open http://localhost:4321. The app is published on `127.0.0.1` only.
+Running, upgrading, data and Backups, and authoring paths are covered in the [project README](../README.md). The build spec is [`../spec/SPEC.md`](../spec/SPEC.md).
 
 ## Develop
 
+Node 26 (see `.nvmrc`).
+
 ```sh
 npm install
-npm run dev:server      # Fastify on :3000
+npm run dev:server      # Fastify on :3000 (data in server/.data, paths from ./paths)
 npm run dev:web         # Vite on :5173, proxies /api to :3000
-npm run build && npm run typecheck && npm run lint && npm test
 ```
+
+Dev builds accept `?today=YYYY-MM-DD` on any page to view the run on another date; production builds ignore it.
+
+## Check
+
+```sh
+npm run build -w core   # web and server import core from dist: rebuild it after core changes
+npm run typecheck && npm run lint && npm run format:check && npm test
+```
+
+## End-to-end
+
+```sh
+npm run e2e
+```
+
+Runs the 17-week walkthrough (`e2e/walkthrough.spec.ts`) in the installed Google Chrome against a freshly built container. It uses its own Compose project (`lt-e2e`), volume, port (4399) and a temporary copy of `paths/`, so it never touches a running instance or your `appdata` volume. It removes its container, volume and image when it finishes.
