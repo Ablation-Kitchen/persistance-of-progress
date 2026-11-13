@@ -1401,3 +1401,202 @@ h1 em {
 .grp {
   margin: 16px 0 2px;
 }
+
+/* Notes screen (ticket 12) */
+.notes-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 20px 48px;
+  align-items: end;
+}
+@media (max-width: 900px) {
+  .notes-hero {
+    grid-template-columns: 1fr;
+    padding-top: 36px;
+  }
+}
+mark {
+  background: color-mix(in srgb, var(--accent) 24%, transparent);
+  color: inherit;
+  border-radius: 3px;
+  padding: 0 1px;
+}
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-card);
+  padding: 20px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.about {
+  border-color: var(--ink);
+}
+.about-head,
+.tl-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.about-body {
+  margin-top: 8px;
+  columns: 2 320px;
+  column-gap: 32px;
+}
+.about .hint {
+  margin: 8px 0 0;
+}
+.notes-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 20px;
+}
+.search {
+  flex: 1 1 240px;
+  min-height: 40px;
+  font: inherit;
+  color: inherit;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  padding: 0 16px;
+}
+.search:focus {
+  outline: none;
+  border-color: var(--ink);
+}
+.block-chips {
+  margin: 16px 0 20px;
+}
+.chip-count {
+  color: inherit;
+  opacity: 0.7;
+}
+.notes-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 20px;
+  align-items: start;
+  padding-bottom: 40px;
+}
+@media (max-width: 980px) {
+  .notes-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.notes-main > .mono {
+  margin: 0;
+}
+.notes-main h2 {
+  margin: 4px 0 0;
+  font-size: 34px;
+  line-height: 1.05;
+}
+.notes-main .goal-sm {
+  margin: 6px 0 10px;
+}
+.trow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 14px;
+  align-items: start;
+  padding: 14px 0;
+  border-top: 1px solid var(--rule);
+}
+.trow-title {
+  font-size: 15px;
+  font-weight: 500;
+}
+.trow .ctx {
+  margin: 2px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  align-items: center;
+}
+.trow .note-clip,
+.trow .gap,
+.trow-foot {
+  grid-column: 1 / -1;
+}
+.trow-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  align-items: center;
+}
+.note-clip {
+  font-size: 15px;
+  overflow-x: auto;
+}
+.note-clip.clipped {
+  max-height: 9.6em;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, #000 70%, transparent);
+  mask-image: linear-gradient(to bottom, #000 70%, transparent);
+}
+.gap {
+  border: 1px dashed var(--rule);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.gap.due {
+  border-color: var(--accent);
+}
+.day-notes h3 {
+  margin: 0;
+  font-size: 26px;
+}
+.day-notes > .mono {
+  margin: 2px 0 10px;
+}
+.tl {
+  list-style: none;
+  margin: 0;
+  position: relative;
+  padding: 0 0 0 18px;
+}
+.tl::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 6px;
+  bottom: 6px;
+  width: 1px;
+  background: var(--rule);
+}
+.tl-i {
+  position: relative;
+  padding: 8px 0 10px;
+}
+.tl-i::before {
+  content: "";
+  position: absolute;
+  left: -18px;
+  top: 14px;
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--meta);
+}
+.tl-i.has::before {
+  background: var(--done);
+  border-color: var(--done);
+}
+.tl-i.today::before {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.tl-i .note-clip {
+  font-size: 14px;
+}

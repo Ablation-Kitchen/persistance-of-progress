@@ -10,3 +10,4 @@ export * from "./signals/signals.js";
 export * from "./api/contracts.js";
 export * from "./signals/outline.js";
 export * from "./resources/resources.js";
+export * from "./signals/notes.js";
