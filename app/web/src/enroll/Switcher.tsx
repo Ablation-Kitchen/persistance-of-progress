@@ -8,6 +8,7 @@ import {
   useEnrollments,
   useSetActive,
 } from "../queries";
+import { ReloadMenuItem } from "../reload/ReloadFlow";
 import { useToday } from "../today";
 
 /** Each Enrollment with title, start date and Task count; the active one adds percent and streak. */
@@ -150,7 +151,8 @@ export function SwitcherMenu() {
             }}
           >
             New enrollment
-          </button>
+          </button>{" "}
+          <ReloadMenuItem onOpen={() => setOpen(false)} />
         </div>
       )}
     </div>
