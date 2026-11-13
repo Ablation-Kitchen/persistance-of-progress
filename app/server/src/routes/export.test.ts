@@ -19,7 +19,7 @@ beforeEach(async () => {
   mkdirSync(pathsDir);
   copyFileSync(FIXTURE, path.join(pathsDir, "eval-infra-17-weeks.yaml"));
   db = openAndMigrate(dataDir).db;
-  app = await buildApp({ webDist: path.join(dataDir, "no-web"), db, pathsDir });
+  app = await buildApp({ webDist: path.join(dataDir, "no-web"), db, pathsDir, dataDir });
   const res = await app.inject({
     method: "POST",
     url: "/api/enrollments",

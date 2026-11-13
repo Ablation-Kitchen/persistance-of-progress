@@ -8,6 +8,7 @@ import {
   useEnrollments,
   useSetActive,
 } from "../queries";
+import { BackupMenuItems } from "../backup/RestoreFlow";
 import { ReloadMenuItem } from "../reload/ReloadFlow";
 import { useToday } from "../today";
 
@@ -153,6 +154,7 @@ export function SwitcherMenu() {
             New enrollment
           </button>{" "}
           <ReloadMenuItem onOpen={() => setOpen(false)} />
+          <BackupMenuItems onOpen={() => setOpen(false)} />
         </div>
       )}
     </div>

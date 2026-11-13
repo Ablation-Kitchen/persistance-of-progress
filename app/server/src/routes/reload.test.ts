@@ -30,7 +30,7 @@ beforeEach(async () => {
   mkdirSync(pathsDir);
   copyFileSync(FIXTURE, path.join(pathsDir, FILE));
   db = openAndMigrate(dataDir).db;
-  app = await buildApp({ webDist: path.join(dataDir, "no-web"), db, pathsDir });
+  app = await buildApp({ webDist: path.join(dataDir, "no-web"), db, pathsDir, dataDir });
 });
 
 afterEach(async () => {

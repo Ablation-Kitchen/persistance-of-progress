@@ -23,6 +23,7 @@ const app = await buildApp({
   webDist,
   db,
   pathsDir,
+  dataDir,
   logger: { level: process.env.LOG_LEVEL ?? "warn" },
 });
 

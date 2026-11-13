@@ -8,6 +8,7 @@ import { userVersion, type Db } from "./db/index.js";
 import { installErrorHandler } from "./errors.js";
 import { PathScanner } from "./paths/scan.js";
 import { appRoutes } from "./routes/app.js";
+import { backupRoutes } from "./routes/backup.js";
 import { enrollmentRoutes } from "./routes/enrollments.js";
 import { exportRoutes } from "./routes/export.js";
 import { noteRoutes } from "./routes/notes.js";
@@ -22,10 +23,12 @@ export interface AppOptions {
   db: Db;
   /** The read-only `/paths` folder. Missing is fine: the scan returns `[]`. */
   pathsDir: string;
+  /** `/data`: where restore Safety Copies are written. */
+  dataDir: string;
   logger?: FastifyServerOptions["logger"];
 }
 
-export async function buildApp({ webDist, db, pathsDir, logger = false }: AppOptions) {
+export async function buildApp({ webDist, db, pathsDir, dataDir, logger = false }: AppOptions) {
   // Request logs are at info level; main.ts runs the logger at warn, so they stay quiet.
   const app = Fastify({ logger }).withTypeProvider<TypeBoxTypeProvider>();
   app.addHook("onClose", async () => {
@@ -47,6 +50,7 @@ export async function buildApp({ webDist, db, pathsDir, logger = false }: AppOpt
   noteRoutes(app, db);
   exportRoutes(app, db);
   reloadRoutes(app, db, scanner);
+  backupRoutes(app, db, dataDir);
 
   const hasWeb = existsSync(path.join(webDist, "index.html"));
   if (hasWeb) {

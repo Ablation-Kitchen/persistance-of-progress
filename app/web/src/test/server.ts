@@ -29,7 +29,7 @@ export async function startServer({ withFixture = true } = {}): Promise<TestServ
   mkdirSync(pathsDir);
   if (withFixture) copyFileSync(FIXTURE, path.join(pathsDir, "eval-infra-17-weeks.yaml"));
   const { db } = openAndMigrate(dataDir);
-  const app = await buildApp({ webDist: path.join(dataDir, "no-web"), db, pathsDir });
+  const app = await buildApp({ webDist: path.join(dataDir, "no-web"), db, pathsDir, dataDir });
 
   const realFetch = globalThis.fetch;
   globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {

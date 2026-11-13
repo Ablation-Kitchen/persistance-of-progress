@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { RestoreFileButton } from "../backup/RestoreFlow";
 import { useNavigate } from "react-router";
 import {
   loadPath,
@@ -146,9 +147,7 @@ export function StartPage({ firstRun }: { firstRun: boolean }) {
           <h2 id="restore-title" className="section-title">
             Restore from backup
           </h2>
-          <button type="button" className="pill" disabled title="Coming soon">
-            Choose a backup…
-          </button>
+          <RestoreFileButton label="Choose a backup…" />
         </section>
       </div>
 

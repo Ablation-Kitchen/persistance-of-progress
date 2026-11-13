@@ -183,3 +183,41 @@ export const ReloadBody = Type.Object(
   { additionalProperties: false },
 );
 export type ReloadBody = Static<typeof ReloadBody>;
+
+// ---------------------------------------------------------------- Backup and restore (ticket 15)
+
+export const BackupQuery = Type.Object({ today: PlainDate });
+export type BackupQuery = Static<typeof BackupQuery>;
+
+/** `backup` is the file's text: its SHA-256 is the preview's `sourceHash` (spec §8.4). */
+export const RestorePreviewBody = Type.Object(
+  { backup: Type.String(), today: PlainDate },
+  { additionalProperties: false },
+);
+export type RestorePreviewBody = Static<typeof RestorePreviewBody>;
+
+export interface RestoreSummary {
+  backup: import("../backup/backup.js").BackupSummary;
+  current: import("../backup/backup.js").BackupSummary;
+}
+
+/** Built by `backupSummary`; an empty schema keeps Fastify's serializer from dropping fields. */
+const RestoreSummaryJson = Type.Unsafe<RestoreSummary>({});
+
+export const RestorePreviewResponse = Type.Object({
+  summary: RestoreSummaryJson,
+  sourceHash: Type.String(),
+  /** The current `appStateVersion`. */
+  stateVersion: Type.Integer({ minimum: 0 }),
+});
+export type RestorePreviewResponse = Static<typeof RestorePreviewResponse>;
+
+export const RestoreBody = Type.Object(
+  {
+    backup: Type.String(),
+    expectedSourceHash: Type.String(),
+    expectedStateVersion: Type.Integer({ minimum: 0 }),
+  },
+  { additionalProperties: false },
+);
+export type RestoreBody = Static<typeof RestoreBody>;

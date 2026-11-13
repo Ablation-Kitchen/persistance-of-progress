@@ -18,6 +18,7 @@ beforeAll(async () => {
     webDist,
     db: openAndMigrate(dataDir).db,
     pathsDir: path.join(dataDir, "no-paths"),
+    dataDir,
   });
 });
 

@@ -7,7 +7,7 @@ import { AppInfo, BACKUP_FORMAT_VERSION, SetActiveBody } from "@learning-tracker
 import { getSettings, type Db } from "../db/index.js";
 import { setActive } from "../enrollments/repo.js";
 
-const appVersion = (
+export const appVersion = (
   JSON.parse(
     readFileSync(
       path.join(path.dirname(fileURLToPath(import.meta.url)), "../../package.json"),

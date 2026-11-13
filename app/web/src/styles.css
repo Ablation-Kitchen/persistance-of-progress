@@ -1656,3 +1656,45 @@ mark {
   margin-left: 6px;
   font-size: 12px;
 }
+
+/* Backup and restore (ticket 15) */
+.backup-menu {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--rule);
+}
+.backup-menu > .mono {
+  margin: 0 0 8px;
+}
+.restore-dialog {
+  width: min(640px, 100%);
+}
+.restore-compare {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 12px 0;
+}
+@media (max-width: 560px) {
+  .restore-compare {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.restore-col h3 {
+  margin: 0 0 6px;
+  font-weight: 400;
+}
+.restore-col ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.restore-col li {
+  display: grid;
+  gap: 2px;
+  padding: 8px 0;
+  border-top: 1px solid var(--rule);
+}
+.restore-col .tag {
+  justify-self: start;
+}

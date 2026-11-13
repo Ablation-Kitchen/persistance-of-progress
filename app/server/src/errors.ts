@@ -1,5 +1,10 @@
 import type { FastifyError, FastifyInstance } from "fastify";
-import { isDate, type ErrorCode, type ErrorResponse, type Issue } from "@learning-tracker/core";
+import {
+  isDate,
+  type ErrorCode,
+  type ErrorResponse,
+  type IssueJson as Issue,
+} from "@learning-tracker/core";
 
 /** A failure with the §8.2 envelope. Throw it from any handler. */
 export class ApiError extends Error {

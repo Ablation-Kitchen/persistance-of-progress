@@ -38,10 +38,7 @@ describe("first run", () => {
     const item = (await screen.findByRole("button", { name: /^Load / })).closest("li")!;
     expect(item.textContent).toContain("123 tasks");
     expect(item.textContent).toContain("valid");
-    expect(screen.getByRole("button", { name: "Choose a backup…" })).toHaveProperty(
-      "disabled",
-      true,
-    );
+    expect(screen.getByLabelText("Choose a backup…")).toHaveProperty("type", "file");
 
     fireEvent.click(within(item).getByRole("button"));
     const dialog = await screen.findByRole("dialog");
