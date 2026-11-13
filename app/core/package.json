@@ -19,12 +19,16 @@
   "scripts": {
     "build": "rm -rf dist && tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "build:generation-schema": "tsx scripts/build-generation-schema.ts"
   },
   "dependencies": {
     "@noble/hashes": "^2.4.0",
     "ajv": "^8.20.0",
     "typebox": "^1.4.7",
     "yaml": "^2.9.1"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.0"
   }
 }

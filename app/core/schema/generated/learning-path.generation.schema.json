@@ -1,0 +1,268 @@
+{
+  "title": "Learning Path",
+  "description": "A Learning Path: Blocks of Tasks, each Task placed on an explicit day (1-based, relative to the Enrollment start date). Canonical schema: uses only constructs from the shared Anthropic/OpenAI structured-output subset, but allows optional properties. The LLM generation schema is derived from this file (all properties required, optional ones nullable). Rules this schema cannot express are enforced by the app's path validator and stated in descriptions.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "id",
+    "version",
+    "title",
+    "description",
+    "startWeekday",
+    "weekRhythm",
+    "resources",
+    "blocks"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "description": "Schema version of this file. Always 1.",
+      "const": 1
+    },
+    "id": {
+      "description": "Stable identity of the path, used to match a reloaded file to its Enrollments. Kebab-case slug.",
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "version": {
+      "description": "Free-form author version label (e.g. \"2026-11-09\" or \"1.2\"). Display only. Null when absent.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "title": {
+      "description": "Path title.",
+      "type": "string"
+    },
+    "description": {
+      "description": "Markdown introduction: how to use the path, assumptions, standing advice.",
+      "type": "string"
+    },
+    "startWeekday": {
+      "description": "Weekday the path is designed to start on. A hint for the start-date picker; never enforced. Null when absent.",
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday",
+        null
+      ]
+    },
+    "weekRhythm": {
+      "description": "Exactly 7 display labels naming the recurring role of each day of a path week, indexed by (day - 1) mod 7. Empty string = no label. Weekday-neutral wording (\"Study\", not \"Monday\"). Null when absent.",
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "resources": {
+      "description": "Core resources used throughout the path. Null when absent.",
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Resource"
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "blocks": {
+      "description": "Blocks in day order. A Block's day range is derived from its Tasks (first day to last due day); Blocks must not overlap. Gaps between Blocks are allowed.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/Block"
+      }
+    }
+  },
+  "$defs": {
+    "Block": {
+      "description": "A named group of consecutive days with a shared goal.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "goal",
+        "description",
+        "tasks"
+      ],
+      "properties": {
+        "title": {
+          "description": "Block title, e.g. \"Weeks 4-6: The platform layer\".",
+          "type": "string"
+        },
+        "goal": {
+          "description": "One-line goal shown alongside the Block's days.",
+          "type": "string"
+        },
+        "description": {
+          "description": "Markdown context for the Block (sub-topics, framing). Null when absent.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tasks": {
+          "description": "Tasks of this Block. Array order is the display order within a day.",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/Task"
+          }
+        }
+      }
+    },
+    "Task": {
+      "description": "The smallest unit of work the learner ticks off.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "day",
+        "dueDay",
+        "kind",
+        "optional",
+        "title",
+        "description",
+        "links",
+        "noteTemplate"
+      ],
+      "properties": {
+        "id": {
+          "description": "Stable Task identity, unique across the whole path. Kebab-case, meaningful but not positional (\"kv-cache-exercise\", not \"w03-ex1\"), so it survives the Task moving to another day. Exception: copies of a recurring Task (one per week) use \"<series>-week-<n>\", n = the week it was authored for; never renumbered if the copy moves.",
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+        },
+        "day": {
+          "description": "1-based day within the path on which the Task first appears. Integer >= 1.",
+          "type": "integer"
+        },
+        "dueDay": {
+          "description": "Last day the Task is meant to be worked on; it is overdue only after this day. Integer >= day. Defaults to day. Null when absent.",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "kind": {
+          "description": "material = read/watch/skim; exercise = hands-on build, may span sessions; checkpoint = self-assessment statement (the title); reflection = prompt to write a Note (the description).",
+          "type": "string",
+          "enum": [
+            "material",
+            "exercise",
+            "checkpoint",
+            "reflection"
+          ]
+        },
+        "optional": {
+          "description": "True if the Task may be skipped when falling behind. Defaults to false. Null when absent.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "title": {
+          "description": "Short title. For a checkpoint, the statement itself (\"I can explain ...\").",
+          "type": "string"
+        },
+        "description": {
+          "description": "Markdown details or instructions. For a reflection, the prompt. Null when absent.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "links": {
+          "description": "Resources for this Task. Null when absent.",
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Link"
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "noteTemplate": {
+          "description": "Markdown that pre-fills this Task's Note (e.g. a fill-in table). Null when absent.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "Link": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "url"
+      ],
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "url": {
+          "description": "Absolute http(s) URL, if the resource is online. Null when absent.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^https?://"
+        }
+      },
+      "description": "A resource for a Task. Without a url it names an offline resource (a book chapter)."
+    },
+    "Resource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "url",
+        "note"
+      ],
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "url": {
+          "description": "Absolute http(s) URL, if the resource is online. Null when absent.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^https?://"
+        },
+        "note": {
+          "description": "What to use it for, e.g. \"evaluation and inference chapters\". Null when absent.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  }
+}

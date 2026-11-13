@@ -1,5 +1,5 @@
 {
   "extends": "../tsconfig.base.json",
   "compilerOptions": { "rootDir": ".", "outDir": "dist", "types": ["node"] },
-  "include": ["src", "schema/*.json"]
+  "include": ["src", "scripts", "schema/*.json"]
 }
