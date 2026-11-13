@@ -112,3 +112,10 @@ export const TaskStateResponse = Type.Object({
   stateVersion: Type.Integer({ minimum: 0 }),
 });
 export type TaskStateResponse = Static<typeof TaskStateResponse>;
+
+/** A Schedule Shift: move every live `todo` Task forward 1–365 days (spec §8.3, §13.6). */
+export const ShiftBody = Type.Object(
+  { days: Type.Integer({ minimum: 1, maximum: 365 }), appliedOn: PlainDate },
+  { additionalProperties: false },
+);
+export type ShiftBody = Static<typeof ShiftBody>;

@@ -10,6 +10,7 @@ import { PathScanner } from "./paths/scan.js";
 import { appRoutes } from "./routes/app.js";
 import { enrollmentRoutes } from "./routes/enrollments.js";
 import { pathRoutes } from "./routes/paths.js";
+import { shiftRoutes } from "./routes/shifts.js";
 
 export interface AppOptions {
   /** Directory holding the built frontend (`web/dist`). Missing is fine: only the API is served. */
@@ -39,6 +40,7 @@ export async function buildApp({ webDist, db, pathsDir, logger = false }: AppOpt
   appRoutes(app, db);
   pathRoutes(app, scanner);
   enrollmentRoutes(app, db, scanner);
+  shiftRoutes(app, db);
 
   const hasWeb = existsSync(path.join(webDist, "index.html"));
   if (hasWeb) {

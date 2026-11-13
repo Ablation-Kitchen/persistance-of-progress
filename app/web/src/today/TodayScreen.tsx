@@ -19,6 +19,7 @@ import {
 } from "@learning-tracker/core";
 import { useApp, useEnrollment, useSetTaskState } from "../queries";
 import { capitalise, shortDate, useToday, weekdayShort } from "../today";
+import { ShiftControl } from "./ShiftControl";
 import { SidePane } from "./SidePane";
 import { TaskCard, type TaskActions } from "./TaskCard";
 
@@ -170,15 +171,9 @@ function TodayView({ snapshot }: { snapshot: Snapshot }) {
           ["day streak", String(s.streak)],
         ];
 
-  const shiftPlaceholder =
-    columns.catchUp.length > 0 ? (
-      <div className="shift">
-        <button type="button" className="pill sm" disabled>
-          Shift open tasks
-        </button>
-        <span className="mono">coming soon</span>
-      </div>
-    ) : null;
+  const shiftControl = (
+    <ShiftControl snapshot={snapshot} today={today} overdue={columns.catchUp.length} />
+  );
 
   let main: ReactNode;
   if (mode === "before") {
@@ -200,7 +195,7 @@ function TodayView({ snapshot }: { snapshot: Snapshot }) {
           </p>
         </div>
         <div className="cols one">
-          {column("Still open", "overdue after the last day", columns.catchUp, shiftPlaceholder)}
+          {column("Still open", "overdue after the last day", columns.catchUp, shiftControl)}
         </div>
       </>
     );
@@ -249,7 +244,7 @@ function TodayView({ snapshot }: { snapshot: Snapshot }) {
           ))}
         </div>
         <div className="cols">
-          {column("Catch up", "overdue, oldest first", columns.catchUp, shiftPlaceholder)}
+          {column("Catch up", "overdue, oldest first", columns.catchUp, shiftControl)}
           {middle}
           {column("In progress", "started earlier, still open", columns.inProgress)}
         </div>

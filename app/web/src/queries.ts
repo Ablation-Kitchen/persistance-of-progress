@@ -150,3 +150,21 @@ export function useSetTaskState(enrollmentId: string) {
     },
   });
 }
+
+/** Schedule Shift and undo are server-confirmed: the returned snapshot replaces the cache (§10). */
+export function useShift(enrollmentId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { days: number; appliedOn: string }) =>
+      api<Snapshot>("POST", `/api/enrollments/${enrollmentId}/shifts`, body),
+    onSuccess: (snapshot) => qc.setQueryData(keys.enrollment(enrollmentId), snapshot),
+  });
+}
+
+export function useUndoShift(enrollmentId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api<Snapshot>("DELETE", `/api/enrollments/${enrollmentId}/shifts/latest`),
+    onSuccess: (snapshot) => qc.setQueryData(keys.enrollment(enrollmentId), snapshot),
+  });
+}
