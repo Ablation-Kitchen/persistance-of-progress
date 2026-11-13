@@ -1608,3 +1608,51 @@ mark {
 .export-notes:hover {
   text-decoration: none;
 }
+
+/* Reload (ticket 13) */
+.reload-banner {
+  background: var(--surface);
+  border-bottom: 1px solid var(--rule);
+  font-size: 14px;
+}
+.reload-banner .row {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+.reload-dialog {
+  width: min(620px, 100%);
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+}
+.reload-files {
+  list-style: none;
+  margin: 12px 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.reload-notice {
+  color: var(--accent-text);
+  font-size: 14px;
+}
+.reload-summary {
+  font-weight: 500;
+  margin: 0 0 8px;
+}
+.reload-diff section {
+  border-top: 1px solid var(--rule);
+  padding: 8px 0;
+}
+.reload-diff h3 {
+  margin: 0 0 4px;
+  font-weight: 400;
+}
+.reload-diff ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 14px;
+}
+.reload-diff li .tag {
+  margin-left: 6px;
+  font-size: 12px;
+}

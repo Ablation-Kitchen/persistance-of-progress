@@ -1,6 +1,7 @@
 /** Request and response contracts for the routes of spec §8.3 (TypeBox, shared by server and web). */
 import { Type, type Static } from "typebox";
 import { NoteMeta, PlainDate, TaskStateRecord, TaskStatus, Timestamp } from "./snapshot.js";
+import type { ReloadDiff } from "../reload/reload.js";
 
 /** Version of the JSON Backup format (spec §9.2). */
 export const BACKUP_FORMAT_VERSION = 1;
@@ -151,3 +152,34 @@ export type PutNoteResponse = Static<typeof PutNoteResponse>;
 
 export const DeleteNoteResponse = Type.Object({ stateVersion: Type.Integer({ minimum: 0 }) });
 export type DeleteNoteResponse = Static<typeof DeleteNoteResponse>;
+
+// ---------------------------------------------------------------- Reload (ticket 13)
+
+export const ReloadPreviewBody = Type.Object(
+  { source: PathSource },
+  { additionalProperties: false },
+);
+export type ReloadPreviewBody = Static<typeof ReloadPreviewBody>;
+
+/** The diff is built by `diffReload`; an empty schema keeps Fastify's serializer from dropping fields. */
+const ReloadDiffJson = Type.Unsafe<ReloadDiff>({});
+
+export const ReloadPreviewResponse = Type.Union([
+  Type.Object({ unchanged: Type.Literal(true) }),
+  Type.Object({
+    diff: ReloadDiffJson,
+    sourceHash: Type.String(),
+    stateVersion: Type.Integer({ minimum: 0 }),
+  }),
+]);
+export type ReloadPreviewResponse = Static<typeof ReloadPreviewResponse>;
+
+export const ReloadBody = Type.Object(
+  {
+    source: PathSource,
+    expectedSourceHash: Type.String(),
+    expectedStateVersion: Type.Integer({ minimum: 0 }),
+  },
+  { additionalProperties: false },
+);
+export type ReloadBody = Static<typeof ReloadBody>;

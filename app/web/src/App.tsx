@@ -6,6 +6,7 @@ import { Header } from "./Header";
 import { useApp, useEnrollments } from "./queries";
 import { NotesScreen } from "./notes/NotesScreen";
 import { PathScreen } from "./path/PathScreen";
+import { ReloadBanner, ReloadFlowProvider } from "./reload/ReloadFlow";
 import { ToastProvider } from "./toast";
 import { TodayScreen } from "./today/TodayScreen";
 
@@ -25,38 +26,41 @@ function RequireActive({ children }: { children: ReactNode }) {
 export function App() {
   return (
     <ToastProvider>
-      <Header />
-      <main className="wrap">
-        <Routes>
-          <Route path="/" element={<Navigate to="/today" replace />} />
-          <Route
-            path="/today"
-            element={
-              <RequireActive>
-                <TodayScreen />
-              </RequireActive>
-            }
-          />
-          <Route
-            path="/path"
-            element={
-              <RequireActive>
-                <PathScreen />
-              </RequireActive>
-            }
-          />
-          <Route
-            path="/notes"
-            element={
-              <RequireActive>
-                <NotesScreen />
-              </RequireActive>
-            }
-          />
-          <Route path="/new" element={<StartPage firstRun={false} />} />
-          <Route path="*" element={<Navigate to="/today" replace />} />
-        </Routes>
-      </main>
+      <ReloadFlowProvider>
+        <Header />
+        <ReloadBanner />
+        <main className="wrap">
+          <Routes>
+            <Route path="/" element={<Navigate to="/today" replace />} />
+            <Route
+              path="/today"
+              element={
+                <RequireActive>
+                  <TodayScreen />
+                </RequireActive>
+              }
+            />
+            <Route
+              path="/path"
+              element={
+                <RequireActive>
+                  <PathScreen />
+                </RequireActive>
+              }
+            />
+            <Route
+              path="/notes"
+              element={
+                <RequireActive>
+                  <NotesScreen />
+                </RequireActive>
+              }
+            />
+            <Route path="/new" element={<StartPage firstRun={false} />} />
+            <Route path="*" element={<Navigate to="/today" replace />} />
+          </Routes>
+        </main>
+      </ReloadFlowProvider>
     </ToastProvider>
   );
 }

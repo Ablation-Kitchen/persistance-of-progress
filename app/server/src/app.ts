@@ -12,6 +12,7 @@ import { enrollmentRoutes } from "./routes/enrollments.js";
 import { exportRoutes } from "./routes/export.js";
 import { noteRoutes } from "./routes/notes.js";
 import { pathRoutes } from "./routes/paths.js";
+import { reloadRoutes } from "./routes/reload.js";
 import { shiftRoutes } from "./routes/shifts.js";
 
 export interface AppOptions {
@@ -45,6 +46,7 @@ export async function buildApp({ webDist, db, pathsDir, logger = false }: AppOpt
   shiftRoutes(app, db);
   noteRoutes(app, db);
   exportRoutes(app, db);
+  reloadRoutes(app, db, scanner);
 
   const hasWeb = existsSync(path.join(webDist, "index.html"));
   if (hasWeb) {
