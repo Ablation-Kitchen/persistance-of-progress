@@ -8,3 +8,4 @@ export * from "./api/snapshot.js";
 export * from "./dates/dates.js";
 export * from "./signals/signals.js";
 export * from "./api/contracts.js";
+export * from "./signals/outline.js";

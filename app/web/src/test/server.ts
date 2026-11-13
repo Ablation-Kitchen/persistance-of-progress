@@ -8,7 +8,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildApp } from "../../../server/src/app.js";
-import { openAndMigrate } from "../../../server/src/db/index.js";
+import { openAndMigrate, type Db } from "../../../server/src/db/index.js";
 
 export const FIXTURE = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -17,6 +17,8 @@ export const FIXTURE = path.resolve(
 
 export interface TestServer {
   pathsDir: string;
+  /** The server's open database, for seeding states no route can produce yet. */
+  db: Db;
   writePath(name: string, text: string): void;
   close(): Promise<void>;
 }
@@ -26,11 +28,8 @@ export async function startServer({ withFixture = true } = {}): Promise<TestServ
   const pathsDir = path.join(dataDir, "paths");
   mkdirSync(pathsDir);
   if (withFixture) copyFileSync(FIXTURE, path.join(pathsDir, "eval-infra-17-weeks.yaml"));
-  const app = await buildApp({
-    webDist: path.join(dataDir, "no-web"),
-    db: openAndMigrate(dataDir).db,
-    pathsDir,
-  });
+  const { db } = openAndMigrate(dataDir);
+  const app = await buildApp({ webDist: path.join(dataDir, "no-web"), db, pathsDir });
 
   const realFetch = globalThis.fetch;
   globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -50,6 +49,7 @@ export async function startServer({ withFixture = true } = {}): Promise<TestServ
 
   return {
     pathsDir,
+    db,
     writePath: (name, text) => writeFileSync(path.join(pathsDir, name), text),
     async close() {
       globalThis.fetch = realFetch;
