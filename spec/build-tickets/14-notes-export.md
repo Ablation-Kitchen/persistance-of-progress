@@ -1,6 +1,6 @@
 ---
 title: "Notes Markdown export"
-status: open
+status: closed
 blocked_by: [8, 9]
 ---
 
@@ -14,8 +14,8 @@ blocked_by: [8, 9]
 
 ## Acceptance
 
-- [ ] **Golden-file test:** the seeded week-16 scenario produces the committed `notes-export.golden.md`.
-- [ ] The filename is `eval-infra-17-weeks_<start>_notes_<today>.md`.
-- [ ] A Task Note containing `# Heading` exports as `###### Heading`, and `## Sub` becomes `**Sub**`. A `#` inside a fenced block is unchanged.
-- [ ] Weeks and days without Notes are absent. The story-bank table survives byte for byte.
-- [ ] A shifted Task's Note appears under its effective day.
+- [x] **Golden-file test:** the seeded week-16 scenario produces the committed `notes-export.golden.md`.
+- [x] The filename is `eval-infra-17-weeks_<start>_notes_<today>.md`.
+- [x] A Task Note containing `# Heading` exports as `###### Heading`, and `## Sub` becomes `**Sub**`. A `#` inside a fenced block is unchanged.
+- [x] Weeks and days without Notes are absent. The story-bank table survives byte for byte.
+- [x] A shifted Task's Note appears under its effective day.
