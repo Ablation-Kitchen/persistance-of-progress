@@ -1,0 +1,1641 @@
+<!doctype html>
+<!--
+  PROTOTYPE, throwaway. Ticket 008: "What should the Today view look like?"
+  Three variants of the Today screen, switchable via ?variant=A|B|C, on real data
+  (samples/eval-infra-17-weeks.yaml, embedded at build time by build.mjs).
+  State is in memory only; reload resets it. Rules follow tickets 007 and 009.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Today Prototype</title>
+<style>
+:root{--bg:#f7f6f3;--panel:#fff;--ink:#1d1d1b;--muted:#6b6a65;--line:#e3e1db;--accent:#2f6f5e;--accent-soft:#e3f0ec;--warn:#a5481c;--warn-soft:#fbeadf;--opt:#7a6aa8;--chip:#efede8;--bar:#1d1d1b;--bar-ink:#fff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#161615;--panel:#1f1f1d;--ink:#ecebe6;--muted:#9c9a93;--line:#34332f;--accent:#6cc2a8;--accent-soft:#1f3a33;--warn:#f0956a;--warn-soft:#3d261b;--opt:#b3a6e0;--chip:#2a2a27;--bar:#ecebe6;--bar-ink:#161615}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding-bottom:120px}
+a{color:var(--accent)} button{font:inherit;cursor:pointer} code{background:var(--chip);padding:0 4px;border-radius:4px;font-size:.9em}
+textarea{width:100%;font:inherit;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px;min-height:70px}
+.wrap{max-width:760px;margin:0 auto;padding:20px 16px}
+.muted{color:var(--muted)} .small{font-size:13px}
+.tag{display:inline-block;font-size:11px;text-transform:uppercase;letter-spacing:.04em;padding:1px 6px;border-radius:4px;background:var(--chip);color:var(--muted);margin-right:4px;vertical-align:1px}
+.tag.opt{color:var(--opt)} .tag.over{background:var(--warn-soft);color:var(--warn)} .tag.ok{background:var(--accent-soft);color:var(--accent)}
+.btn{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:5px 10px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--muted)}
+input[type=number]{width:52px;font:inherit;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:3px}
+.desc p{margin:.35em 0} .desc{color:var(--muted);font-size:14px}
+.done-title{text-decoration:line-through;color:var(--muted)}
+/* A */
+.a-head h1{font-size:22px;margin:0} .a-goal{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:12px 0}
+.a-stats{display:flex;gap:16px;flex-wrap:wrap;margin:8px 0 4px;font-size:14px}
+.a-sec{margin-top:22px} .a-sec h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 6px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.a-row{display:flex;gap:10px;padding:9px 4px;border-bottom:1px solid var(--line);align-items:flex-start}
+.a-row input[type=checkbox]{width:18px;height:18px;margin-top:2px;accent-color:var(--accent);flex:none}
+.a-row .body{flex:1;min-width:0} .a-row .meta{font-size:13px;color:var(--muted)}
+.a-over{background:var(--warn-soft);border-radius:10px;padding:4px 10px}
+.a-over .a-row{border-color:transparent}
+/* B */
+.b-wrap{max-width:1180px;margin:0 auto;padding:16px;display:grid;grid-template-columns:1fr 340px;gap:16px}
+@media (max-width:860px){.b-wrap{grid-template-columns:1fr}}
+.b-top{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.b-progress{display:flex;gap:3px;width:100%;margin-top:6px}
+.b-progress div{height:8px;border-radius:3px;background:var(--chip);position:relative;overflow:hidden}
+.b-progress span{position:absolute;inset:0;background:var(--accent)}
+.b-week{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:14px}
+.b-day{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px;font-size:12px;min-height:58px}
+.b-day{cursor:pointer}.b-day:hover{border-color:var(--accent)} .b-day.today{outline:2px solid var(--accent)} .b-day.viewing{outline:2px dashed var(--accent);background:var(--accent-soft)} .b-day .dots{margin-top:4px;letter-spacing:2px}
+.b-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media (max-width:640px){.b-cols{grid-template-columns:1fr}}
+.b-col{background:var(--chip);border-radius:10px;padding:8px;min-height:120px}
+.b-col h3{margin:2px 4px 8px;font-size:13px;display:flex;justify-content:space-between}
+.b-card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px;margin-bottom:8px;cursor:pointer}
+.b-card.sel{outline:2px solid var(--accent)} .b-card.over{border-left:4px solid var(--warn)}
+.b-side{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;align-self:start;position:sticky;top:12px}
+.b-side h3{margin:0 0 6px;font-size:14px}
+/* C */
+.c-top{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.c-ring{width:84px;height:84px;flex:none}
+.c-card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px;margin:18px 0;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+.c-card h2{font-size:22px;margin:6px 0 8px}
+.c-actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.c-actions .btn{padding:9px 16px}
+.c-q{display:flex;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);align-items:baseline}
+.c-chips span{display:inline-block;background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:2px 10px;margin:0 6px 6px 0;font-size:13px}
+.c-banner{background:var(--warn-soft);color:var(--warn);border-radius:10px;padding:8px 12px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center}
+/* shared: pre/post states */
+.edge{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin:14px 0}
+/* prototype bar */
+#bar{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);background:var(--bar);color:var(--bar-ink);border-radius:14px;padding:8px 10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;box-shadow:0 6px 24px rgba(0,0,0,.3);font-size:13px;max-width:calc(100vw - 24px);z-index:10}
+#bar button,#bar select{background:transparent;color:var(--bar-ink);border:1px solid rgba(127,127,127,.5);border-radius:8px;padding:3px 8px;font:inherit}
+#bar .lbl{font-weight:600;min-width:150px;text-align:center}
+#bar .sep{width:1px;height:20px;background:rgba(127,127,127,.5)}
+#state{position:fixed;right:12px;bottom:80px;width:340px;max-height:55vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px;font:12px/1.4 ui-monospace,monospace;white-space:pre-wrap;display:none;z-index:9;max-width:calc(100vw - 24px)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<pre id="state"></pre>
+<div id="bar">
+  <button data-bar="prev" title="Previous variant (←)">◀</button>
+  <span class="lbl" id="vlabel"></span>
+  <button data-bar="next" title="Next variant (→)">▶</button>
+  <span class="sep"></span>
+  <select id="scenario"></select>
+  <button data-bar="dayback" title="Previous day">− day</button>
+  <button data-bar="dayfwd" title="Next day">+ day</button>
+  <span class="sep"></span>
+  <button data-bar="state">State</button>
+</div>
+<script>
+const PATH = {
+  "schemaVersion": 1,
+  "id": "eval-infra-17-weeks",
+  "version": "2026-11-09",
+  "title": "17-Week Plan: Eval Infrastructure Engineer",
+  "startWeekday": "monday",
+  "description": "In 17 weeks you close the gaps between 8 years of backend work and the Software Engineer,\nEvaluation Infrastructure role: LLM inference, the platform layer, GPU scheduling and eval\nmethodology. You finish with a capstone project that covers almost every bullet in the posting.\n\n**Assumptions:** about 6 hours a week (1 hour each weekday, 1 hour on Saturday), a budget of\nroughly $50–100 for rented GPU time, and Python as the working language. Optional Tasks can be\nskipped if you fall behind.\n\n**Weekly rhythm**\n\n- **Study days (Monday and Wednesday, 1 hour each):** read and watch the week's material and take notes.\n- **Build days (Tuesday, Thursday and Friday, 1 hour each):** build the hands-on exercise in small\n  steps. Commit at the end of every session so you can pick up where you left off.\n- **Review day (Saturday, 1 hour):** tick off the checkpoints, write 3 sentences on what you\n  learned, and choose next week's tasks. These notes become interview material.\n\n**Apply in parallel.** Don't wait until week 17. Start applying around week 8; early interviews\nare practice, and your capstone will be far enough along to talk about.\n\nThe links were compiled from memory, not checked one by one; if one is broken, search the title.\n",
+  "weekRhythm": [
+    "Study",
+    "Build",
+    "Study",
+    "Build",
+    "Build",
+    "Review",
+    ""
+  ],
+  "resources": [
+    {
+      "title": "AI Engineering (Chip Huyen, 2025)",
+      "note": "Evaluation and inference chapters."
+    },
+    {
+      "title": "Designing Data-Intensive Applications (Martin Kleppmann)"
+    },
+    {
+      "title": "How to Scale Your Model (Google DeepMind)",
+      "url": "https://jax-ml.github.io/scaling-book/",
+      "note": "Free online."
+    },
+    {
+      "title": "Andrej Karpathy's YouTube lectures",
+      "url": "https://www.youtube.com/@AndrejKarpathy"
+    },
+    {
+      "title": "Stanford CS336, Language Modeling from Scratch",
+      "url": "https://stanford-cs336.github.io/",
+      "note": "Free lectures."
+    }
+  ],
+  "blocks": [
+    {
+      "title": "Weeks 1–3: How LLMs work and run",
+      "goal": "Be able to explain, with numbers, why LLM inference is expensive and where the time goes.",
+      "description": "This is the vocabulary every later week depends on.\n\n- **Weeks 1–2: The model**\n- **Week 3: Inference arithmetic**\n",
+      "tasks": [
+        {
+          "id": "intro-to-llms",
+          "day": 1,
+          "kind": "material",
+          "title": "Watch: Intro to Large Language Models (Karpathy, 1 hr)",
+          "description": "For the big picture.",
+          "links": [
+            {
+              "title": "Intro to Large Language Models",
+              "url": "https://www.youtube.com/watch?v=zjkBMFhNj_g"
+            }
+          ]
+        },
+        {
+          "id": "build-gpt-from-scratch",
+          "day": 2,
+          "dueDay": 12,
+          "kind": "exercise",
+          "title": "Watch and code along: Let's build GPT from scratch (Karpathy, 2 hrs)",
+          "description": "Type the code yourself; don't just watch. Spread over the build days of weeks 1–2.",
+          "links": [
+            {
+              "title": "Let's build GPT: from scratch, in code, spelled out",
+              "url": "https://www.youtube.com/watch?v=kCc8FmEb1nY"
+            }
+          ]
+        },
+        {
+          "id": "3blue1brown-transformers",
+          "day": 3,
+          "kind": "material",
+          "optional": true,
+          "title": "Visual intuition: 3Blue1Brown neural networks series",
+          "description": "The chapters on transformers and attention.",
+          "links": [
+            {
+              "title": "3Blue1Brown: Neural networks",
+              "url": "https://www.3blue1brown.com/topics/neural-networks"
+            }
+          ]
+        },
+        {
+          "id": "learnings-week-1",
+          "day": 6,
+          "kind": "reflection",
+          "title": "Week 1 review",
+          "description": "Write 3 sentences on what you learned this week, and choose next week's tasks."
+        },
+        {
+          "id": "attention-is-all-you-need",
+          "day": 8,
+          "kind": "material",
+          "title": "Skim: Attention Is All You Need",
+          "description": "Focus on the architecture figure and section 3.",
+          "links": [
+            {
+              "title": "Attention Is All You Need",
+              "url": "https://arxiv.org/abs/1706.03762"
+            }
+          ]
+        },
+        {
+          "id": "learnings-week-2",
+          "day": 13,
+          "kind": "reflection",
+          "title": "Week 2 review",
+          "description": "Write 3 sentences on what you learned this week, and choose next week's tasks."
+        },
+        {
+          "id": "transformer-inference-arithmetic",
+          "day": 15,
+          "kind": "material",
+          "title": "Read: Transformer Inference Arithmetic (kipply)",
+          "description": "The single most useful post for this role.",
+          "links": [
+            {
+              "title": "Transformer Inference Arithmetic",
+              "url": "https://kipp.ly/transformer-inference-arithmetic/"
+            }
+          ]
+        },
+        {
+          "id": "scaling-book-inference",
+          "day": 15,
+          "dueDay": 17,
+          "kind": "material",
+          "title": "Read: \"All About Transformer Inference\" (How to Scale Your Model)",
+          "links": [
+            {
+              "title": "How to Scale Your Model",
+              "url": "https://jax-ml.github.io/scaling-book/"
+            }
+          ]
+        },
+        {
+          "id": "kv-cache-exercise",
+          "day": 16,
+          "dueDay": 19,
+          "kind": "exercise",
+          "title": "Add a KV cache to your GPT and measure the generation speedup",
+          "description": "Use the GPT you built in weeks 1–2."
+        },
+        {
+          "id": "go-brrr",
+          "day": 17,
+          "kind": "material",
+          "title": "Read: Making Deep Learning Go Brrrr From First Principles (Horace He)",
+          "description": "Compute-bound vs. memory-bound vs. overhead-bound.",
+          "links": [
+            {
+              "title": "Making Deep Learning Go Brrrr",
+              "url": "https://horace.io/brrr_intro.html"
+            }
+          ]
+        },
+        {
+          "id": "inference-optimization-overview",
+          "day": 17,
+          "kind": "material",
+          "title": "Read: Large Transformer Model Inference Optimization (Lilian Weng)",
+          "description": "An overview of the techniques you'll meet in weeks 7–9.",
+          "links": [
+            {
+              "title": "Large Transformer Model Inference Optimization",
+              "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/"
+            }
+          ]
+        },
+        {
+          "id": "reproduce-gpt2",
+          "day": 17,
+          "dueDay": 20,
+          "kind": "material",
+          "optional": true,
+          "title": "Watch: Let's reproduce GPT-2 (124M) (Karpathy, 4 hrs)",
+          "description": "Watch the sections on mixed precision, FlashAttention and torch.compile.",
+          "links": [
+            {
+              "title": "Let's reproduce GPT-2 (124M)",
+              "url": "https://www.youtube.com/watch?v=l8pRSuU81PU"
+            }
+          ]
+        },
+        {
+          "id": "kv-cache-size-on-paper",
+          "day": 18,
+          "kind": "exercise",
+          "title": "On paper: KV cache size per token for Llama 3 8B",
+          "description": "32 layers, 8 KV heads, head dimension 128, fp16.\nCheck: it should come to 128 KB per token, about 1 GB for one 8K-token sequence.\n"
+        },
+        {
+          "id": "prefill-vs-decode",
+          "day": 20,
+          "kind": "reflection",
+          "title": "Why is prefill compute-bound and decode memory-bandwidth-bound?",
+          "description": "Explain it in 5 sentences."
+        },
+        {
+          "id": "draw-transformer-block",
+          "day": 20,
+          "kind": "checkpoint",
+          "title": "I can draw a transformer block and explain attention without notes."
+        },
+        {
+          "id": "estimate-kv-cache",
+          "day": 20,
+          "kind": "checkpoint",
+          "title": "I can estimate KV cache memory and max batch size for a model on a given GPU."
+        },
+        {
+          "id": "batching-decode-cost",
+          "day": 20,
+          "kind": "checkpoint",
+          "title": "I can explain why batching makes decode cheaper per token."
+        },
+        {
+          "id": "learnings-week-3",
+          "day": 20,
+          "kind": "reflection",
+          "title": "Week 3 review",
+          "description": "Write 3 sentences on what you learned this week, and choose next week's tasks."
+        }
+      ]
+    },
+    {
+      "title": "Weeks 4–6: The platform layer",
+      "goal": "Move from \"I write services\" to \"I run long batch workloads on a cluster and they survive failures.\"",
+      "description": "This is your biggest gap coming from backend services.\n\n- **Weeks 4–5: Async Python and Kubernetes**\n- **Week 6: Ray, durable workflows, failure handling**\n",
+      "tasks": [
+        {
+          "id": "asyncio-book",
+          "day": 22,
+          "kind": "material",
+          "title": "Read: Python Concurrency with asyncio (Matthew Fowler)",
+          "description": "The chapters on tasks, semaphores, queues and error handling. Skip what you know.",
+          "links": [
+            {
+              "title": "Python Concurrency with asyncio (Matthew Fowler)"
+            }
+          ]
+        },
+        {
+          "id": "async-job-runner",
+          "day": 23,
+          "dueDay": 26,
+          "kind": "exercise",
+          "title": "Write an async Python job runner",
+          "description": "A queue of 10,000 fake \"eval tasks\" (each sleeps randomly and fails 5% of the time), with a\nconcurrency limit, retries with exponential backoff and jitter, and results saved so a\nrestart skips finished work.\n"
+        },
+        {
+          "id": "beazley-concurrency-talk",
+          "day": 24,
+          "kind": "material",
+          "title": "Watch: \"Python Concurrency From the Ground Up: LIVE!\" (David Beazley, PyCon)",
+          "description": "Search the title on YouTube. For intuition on event loops."
+        },
+        {
+          "id": "learnings-week-4",
+          "day": 27,
+          "kind": "reflection",
+          "title": "Week 4 review",
+          "description": "Write 3 sentences on what you learned this week, and choose next week's tasks."
+        },
+        {
+          "id": "kubernetes-up-and-running",
+          "day": 29,
+          "kind": "material",
+          "title": "Read: Kubernetes: Up and Running (3rd ed.)",
+          "description": "The chapters on Pods, Deployments and Jobs, plus resource requests and limits.",
+          "links": [
+            {
+              "title": "Kubernetes: Up and Running, 3rd ed."
+            }
+          ]
+        },
+        {
+          "id": "kind-cluster-runner",
+          "day": 30,
+          "dueDay": 40,
+          "kind": "exercise",
+          "title": "Deploy the runner as worker pods on a local kind cluster",
+          "description": "Run a local cluster with kind and deploy the runner as several worker pods pulling from\nRedis. Kill pods at random and confirm nothing is lost or done twice.\n",
+          "links": [
+            {
+              "title": "kind",
+              "url": "https://kind.sigs.k8s.io/"
+            }
+          ]
+        },
+        {
+          "id": "kubernetes-jobs-and-gpus",
+          "day": 31,
+          "kind": "material",
+          "title": "Read: the Kubernetes docs on Jobs and scheduling GPUs",
+          "links": [
+            {
+              "title": "Kubernetes Jobs",
+              "url": "https://kubernetes.io/docs/concepts/workloads/controllers/job/"
+            },
+            {
+              "title": "Scheduling GPUs",
+              "url": "https://kubernetes.io/docs/tasks/manage-gpus/scheduling-gpus/"
+            }
+          ]
+        },
+        {
+          "id": "ddia-distributed-trouble",
+          "day": 31,
+          "kind": "material",
+          "title": "Read: DDIA, \"The Trouble with Distributed Systems\"",
+          "links": [
+            {
+              "title": "Designing Data-Intensive Applications (Kleppmann)"
+            }
+          ]
+        },
+        {
+          "id": "learnings-week-5",
+          "day": 34,
+          "kind": "reflection",
+          "title": "Week 5 review",
+          "description": "Write 3 sentences on what you learned this week, and choose next week's tasks."
+        },
+        {
+          "id": "ray-core",
+          "day": 36,
+          "kind": "material",
+          "title": "Read: the Ray paper and the Ray Core walkthrough",
+          "description": "Tasks, actors, object store, fault tolerance.",
+          "links": [
+            {
+              "title": "Ray paper",
+              "url": "https://arxiv.org/abs/1712.05889"
+            },
+            {
+              "title": "Ray Core walkthrough",
+              "url": "https://docs.ray.io/en/latest/ray-core/walkthrough.html"
+            }
+          ]
+        },
+        {
+          "id": "temporal-durable-execution",
+          "day": 36,
+          "kind": "material",
+          "title": "Read: Temporal's core concepts on durable execution",
+          "description": "Eval runs are hours-long workflows that must resume after a crash.",
+          "links": [
+            {
+              "title": "Temporal docs",
+              "url": "https://docs.temporal.io/"
+            }
+          ]
+        },
+        {
+          "id": "sre-book-overload",
+          "day": 38,
+          "kind": "material",
+          "title": "Read: Google SRE book, overload and pipeline chapters",
+          "description": "\"Handling Overload\", \"Addressing Cascading Failures\" and \"Data Processing Pipelines\".",
+          "links": [
+            {
+              "title": "Google SRE book",
+              "url": "https://sre.google/sre-book/table-of-contents/"
+            }
+          ]
+        },
+        {
+          "id": "ddia-stream-processing",
+          "day": 38,
+          "kind": "material",
+          "title": "Read: DDIA, \"Stream Processing\"",
+          "description": "Message brokers and exactly-once semantics.",
+          "links": [
+            {
+              "title": "Designing Data-Intensive Applications (Kleppmann)"
+            }
+          ]
+        },
+        {
+          "id": "ray-port",
+          "day": 39,
+          "dueDay": 40,
+          "kind": "exercise",
+          "optional": true,
+          "title": "Port the job runner to Ray tasks and compare",
+          "description": "Compare lines of code, failure behavior, and how it scales."
+        },
+        {
+          "id": "runner-survives-killed-workers",
+          "day": 41,
+          "kind": "checkpoint",
+          "title": "My runner survives killed workers with no lost or duplicated results."
+        },
+        {
+          "id": "jobs-vs-ray-vs-workflows",
+          "day": 41,
+          "kind": "checkpoint",
+          "title": "I can explain when to use Kubernetes Jobs vs. Ray vs. a workflow engine."
+        },
+        {
+          "id": "backpressure-and-retries",
+          "day": 41,
+          "kind": "checkpoint",
+          "title": "I can explain backpressure and why unbounded retries cause cascading failures."
+        },
+        {
+          "id": "learnings-week-6",
+          "day": 41,
+          "kind": "reflection",
+          "title": "Week 6 review",
+          "description": "Write 3 sentences on what you learned this week, and choose next week's tasks."
+        }
+      ]
+    },
+    {
+      "title": "Weeks 7–9: Hands-on LLM inference",
+      "goal": "Serve a real model, load-test it with your own client, and explain every number on the throughput–latency curve.",
+      "description": "This covers the \"Experience in LLM inference\" bullet.\n\n- **Week 7: How serving engines work**\n- **Week 8: Advanced serving and profiling**\n\nFor the exercises, rent one GPU on RunPod, Modal or Lambda; an L4, A10 or A100 is plenty.\n",
+      "tasks": [
+        {
+          "id": "pagedattention-paper",
+          "day": 43,
+          "kind": "material",
+          "title": "Read: Efficient Memory Management for LLM Serving with PagedAttention (vLLM)",
+          "links": [
+            {
+              "title": "PagedAttention",
+              "url": "https://arxiv.org/abs/2309.06180"
+            }
+          ]
+        },
+        {
+          "id": "orca-paper",
+          "day": 43,
+          "kind": "material",
+          "title": "Read: Orca: continuous batching (OSDI '22)",
+          "links": [
+            {
+              "title": "Orca",
+              "url": "https://www.usenix.org/conference/osdi22/presentation/yu"
+            }
+          ]
+        },
+        {
+          "id": "vllm-docs",
+          "day": 44,
+          "kind": "material",
+          "title": "Read: the vLLM docs",
+          "description": "The OpenAI-compatible server, prefix caching and benchmarking. Prep for serving your first model.",
+          "links": [
+            {
+              "title": "vLLM docs",
+              "url": "https://docs.vllm.ai/"
+            }
+          ]
+        },
+        {
+          "id": "vllm-load-generator",
+          "day": 44,
+          "dueDay": 47,
+          "kind": "exercise",
+          "title": "Serve a 7–8B model with vLLM and write your own async load generator",
+          "description": "The generator reports time to first token, inter-token latency and total tokens/sec."
+        },
+        {
+          "id": "flashattention-paper",
+          "day": 45,
+          "kind": "material",
+          "title": "Read: FlashAttention, sections 1–3",
+          "links": [
+            {
+              "title": "FlashAttention",
+              "url": "https://arxiv.org/abs/2205.14135"
+            }
+          ]
+        },
+        {
+          "id": "ai-engineering-inference",
+          "day": 45,
+          "kind": "material",
+          "title": "Read: AI Engineering (Chip Huyen), \"Inference Optimization\"",
+          "links": [
+            {
+              "title": "AI Engineering (Chip Huyen)"
+            }
+          ]
+        },
+        {
+          "id": "cs336-inference-lecture",
+          "day": 45,
+          "dueDay": 47,
+          "kind": "material",
+          "title": "Watch: the inference lecture from Stanford CS336",
+          "description": "Lecture videos are linked from the course site.",
+          "links": [
+            {
+              "title": "Stanford CS336",
+              "url": "https://stanford-cs336.github.io/"
+            }
+          ]
+        },
+        {
+          "id": "learnings-week-7",
+          "day": 48,
+          "kind": "reflection",
+          "title": "Week 7 review",
+          "description": "Write 3 sentences on what you learned this week, and choose next week's tasks."
+        },
+        {
+          "id": "start-applying",
+          "day": 50,
+          "kind": "exercise",
+          "title": "Start applying",
+          "description": "Don't wait until week 17. Early interviews are practice, and your capstone will be far enough along to talk about."
+        },
+        {
+          "id": "speculative-decoding-paper",
+          "day": 50,
+          "kind": "material",
+          "optional": true,
+          "title": "Read: Speculative decoding (Leviathan et al.)",
+          "description": "Week 8 papers: pick at least two of the four.",
+          "links": [
+            {
+              "title": "Speculative decoding",
+              "url": "https://arxiv.org/abs/2211.17192"
+            }
+          ]
+        },
+        {
+          "id": "sglang-paper",
+          "day": 50,
+          "kind": "material",
+          "optional": true,
+          "title": "Read: SGLang and RadixAttention",
+          "description": "Why prefix sharing matters for evals, where many prompts share a long few-shot prefix.\nWeek 8 papers: pick at least two of the four.\n",
+          "links": [
+            {
+              "title": "SGLang",
+              "url": "https://arxiv.org/abs/2312.07104"
+            }
+          ]
+        },
+        {
+          "id": "concurrency-sweep",
+          "day": 51,
+          "dueDay": 54,
+          "kind": "exercise",
+          "title": "Sweep concurrency 1–256 and plot throughput against p50/p99 latency",
+          "description": "Find the knee in the curve and explain it in terms of KV cache memory."
+        },
+        {
+          "id": "sarathi-serve-paper",
+          "day": 52,
+          "kind": "material",
+          "optional": true,
+          "title": "Read: Sarathi-Serve",
+          "description": "Chunked prefill and the throughput–latency tradeoff.\nWeek 8 papers: pick at least two of the four.\n",
+          "links": [
+            {
+              "title": "Sarathi-Serve",
+              "url": "https://arxiv.org/abs/2403.02310"
+            }
+          ]
+        },
+        {
+          "id": "distserve-paper",
+          "day": 52,
+          "kind": "material",
+          "optional": true,
+          "title": "Read: DistServe",
+          "description": "Separating prefill and decode.\nWeek 8 papers: pick at least two of the four.\n",
+          "links": [
+            {
+              "title": "DistServe",
+              "url": "https://arxiv.org/abs/2401.09670"
+            }
+          ]
+        },
+        {
+          "id": "gpu-profiling-tools",
+          "day": 52,
+          "kind": "material",
+          "title": "Learn the tools: nvidia-smi, DCGM, PyTorch profiler, py-spy",
+          "links": [
+            {
+              "title": "NVIDIA DCGM",
+              "url": "https://developer.nvidia.com/dcgm"
+            },
+            {
+              "title": "PyTorch profiler recipe",
+              "url": "https://pytorch.org/tutorials/recipes/recipes/profiler_recipe.html"
+            }
+          ]
+        },
+        {
+          "id": "leetcode-week-8",
+          "day": 54,
+          "kind": "exercise",
+          "optional": true,
+          "title": "LeetCode: 1–2 mediums (heaps, graphs, intervals)",
+          "description": "From week 8, swap one build session a week for this, in case the loop includes a classic round."
+        },
+        {
+          "id": "learnings-week-8",
+          "day": 55,
+          "kind": "reflection",
+          "title": "Week 8 review",
+          "description": "Write 3 sentences on what you learned this week, and choose next week's tasks."
+        },
+        {
+          "id": "prefix-caching-benchmark",
+          "day": 58,
+          "kind": "exercise",
+          "title": "Turn on prefix caching and benchmark a shared few-shot prefix",
+          "description": "Run a few-shot benchmark where every prompt shares a long prefix. Measure the speedup."
+        },
+        {
+          "id": "sglang-or-quantized-run",
+          "day": 59,
+          "kind": "exercise",
+          "optional": true,
+          "title": "Repeat one run with SGLang or a quantized (FP8 or AWQ) model and compare"
+        },
+        {
+          "id": "benchmark-report",
+          "day": 59,
+          "dueDay": 61,
+          "kind": "exercise",
+          "title": "Write a one-page benchmark report with charts",
+          "description": "It goes in your portfolio."
+        },
+        {
+          "id": "leetcode-week-9",
+          "day": 61,
+          "kind": "exercise",
+          "optional": true,
+          "title": "LeetCode: 1–2 mediums (heaps, graphs, intervals)",
+          "description": "Swap one build session this week for this, in case the loop includes a classic round."
+        },
+        {
+          "id": "explain-serving-techniques",
+          "day": 62,
+          "kind": "checkpoint",
+          "title": "I can explain continuous batching, PagedAttention and prefix caching to an interviewer."
+        },
+        {
+          "id": "max-useful-concurrency",
+          "day": 62,
+          "kind": "checkpoint",
+          "title": "I know the max useful concurrency for my setup and why."
+        },
+        {
+          "id": "diagnose-slow-run",
+          "day": 62,
+          "kind": "checkpoint",
+          "title": "I can tell from metrics whether a slow run is bottlenecked on GPU, network, or my client."
+        },
+        {
+          "id": "learnings-week-9",
+          "day": 62,
+          "kind": "reflection",
+          "title": "Week 9 review",
+          "description": "Write 3 sentences on what you learned this week, and choose next week's tasks."
+        }
+      ]
+    },
+    {
+      "title": "Weeks 10–13: Evals and the capstone",
+      "goal": "Understand what makes an eval signal trustworthy, then build a mini eval platform that ties weeks 1–9 together.",
+      "description": "This capstone is the centerpiece of your interviews.\n\n- **Weeks 10–11: Eval methodology** (read while you start building)\n- **Capstone: a mini eval platform** — runner, execution, scoring, comparison UI,\n  performance write-up, README.\n- **Weeks 12–13: Finish and polish the capstone**\n",
+      "tasks": [
+        {
+          "id": "error-bars-for-evals",
+          "day": 64,
+          "kind": "material",
+          "title": "Read: Adding Error Bars to Evals (Evan Miller)",
+          "description": "This is what \"maintaining evaluation signal quality\" means in practice.",
+          "links": [
+            {
+              "title": "Adding Error Bars to Evals",
+              "url": "https://arxiv.org/abs/2411.00640"
+            }
+          ]
+        },
+        {
+          "id": "benchmark-variance",
+          "day": 64,
+          "kind": "material",
+          "title": "Read: Quantifying Variance in Evaluation Benchmarks",
+          "description": "How much scores move between seeds and checkpoints.",
+          "links": [
+            {
+              "title": "Quantifying Variance in Evaluation Benchmarks",
+              "url": "https://arxiv.org/abs/2406.10229"
+            }
+          ]
+        },
+        {
+          "id": "capstone-runner",
+          "day": 65,
+          "dueDay": 68,
+          "kind": "exercise",
+          "title": "Capstone: runner",
+          "description": "An async harness that runs 2–3 benchmarks (e.g. GSM8K, a slice of MMLU, a small coding set\nwith pass@k) against any OpenAI-compatible endpoint. Use your runner from weeks 4–6:\nconcurrency limits, retries, caching, resume.\n"
+        },
+        {
+          "id": "pass-at-k-estimator",
+          "day": 66,
+          "kind": "material",
+          "title": "Read: section 2.1 of the Codex paper (unbiased pass@k estimator)",
+          "links": [
+            {
+              "title": "Codex paper",
+              "url": "https://arxiv.org/abs/2107.03374"
+            }
+          ]
+        },
+        {
+          "id": "ai-engineering-evaluation",
+          "day": 66,
+          "dueDay": 71,
+          "kind": "material",
+          "title": "Read: AI Engineering (Chip Huyen), the two evaluation chapters",
+          "description": "Methodology, and evaluating AI systems, including model-as-judge.",
+          "links": [
+            {
+              "title": "AI Engineering (Chip Huyen)"
+            }
+          ]
+        },
+        {
+          "id": "leetcode-week-10",
+          "day": 68,
+          "kind": "exercise",
+          "optional": true,
+          "title": "LeetCode: 1–2 mediums (heaps, graphs, intervals)",
+          "description": "Swap one build session this week for this, in case the loop includes a classic round."
+        },
+        {
+          "id": "learnings-week-10",
+          "day": 69,
+          "kind": "reflection",
+          "title": "Week 10 review",
+          "description": "Write 3 sentences on what you learned this week, and choose next week's tasks."
+        },
+        {
+          "id": "real-benchmarks",
+          "day": 71,
+          "kind": "material",
+          "title": "Skim: SWE-bench, HELM and Chatbot Arena",
+          "description": "How real benchmarks are built and scored. Chatbot Arena: pairwise comparison, Elo/Bradley–Terry.",
+          "links": [
+            {
+              "title": "SWE-bench",
+              "url": "https://arxiv.org/abs/2310.06770"
+            },
+            {
+              "title": "HELM",
+              "url": "https://arxiv.org/abs/2211.09110"
+            },
+            {
+              "title": "Chatbot Arena",
+              "url": "https://arxiv.org/abs/2403.04132"
+            }
+          ]
+        },
+        {
+          "id": "capstone-execution",
+          "day": 72,
+          "dueDay": 75,
+          "kind": "exercise",
+          "title": "Capstone: execution",
+          "description": "Runs as jobs on your kind cluster, workers autoscaled on queue depth, results in Postgres."
+        },
+        {
+          "id": "eval-framework-code",
+          "day": 73,
+          "kind": "material",
+          "title": "Study the code: Inspect and lm-evaluation-harness",
+          "description": "Inspect: datasets, solvers, scorers, logs.\nlm-evaluation-harness: how tasks are defined and batched.\n",
+          "links": [
+            {
+              "title": "Inspect",
+              "url": "https://inspect.aisi.org.uk/"
+            },
+            {
+              "title": "lm-evaluation-harness",
+              "url": "https://github.com/EleutherAI/lm-evaluation-harness"
+            }
+          ]
+        },
+        {
+          "id": "leetcode-week-11",
+          "day": 75,
+          "kind": "exercise",
+          "optional": true,
+          "title": "LeetCode: 1–2 mediums (heaps, graphs, intervals)",
+          "description": "Swap one build session this week for this, in case the loop includes a classic round."
+        },
+        {
+          "id": "learnings-week-11",
+          "day": 76,
+          "kind": "reflection",
+          "title": "Week 11 review",
+          "description": "Write 3 sentences on what you learned this week, and choose next week's tasks."
+        },
+        {
+          "id": "capstone-scoring",
+          "day": 78,
+          "dueDay": 79,
+          "kind": "exercise",
+          "title": "Capstone: scoring",
+          "description": "Accuracy with 95% confidence intervals, plus paired comparison between two models on the same questions."
+        },
+        {
+          "id": "capstone-comparison-ui",
+          "day": 80,
+          "dueDay": 82,
+          "kind": "exercise",
+          "title": "Capstone: comparison UI",
+          "description": "A small web page (FastAPI plus a simple frontend, or Streamlit): pick two runs, see score\ndeltas with error bars, and drill into the questions where the models disagree.\n"
+        },
+        {
+          "id": "leetcode-week-12",
+          "day": 82,
+          "kind": "exercise",
+          "optional": true,
+          "title": "LeetCode: 1–2 mediums (heaps, graphs, intervals)",
+          "description": "Swap one build session this week for this, in case the loop includes a classic round."
+        },
+        {
+          "id": "learnings-week-12",
+          "day": 83,
+          "kind": "reflection",
+          "title": "Week 12 review",
+          "description": "Write 3 sentences on what you learned this week, and choose next week's tasks."
+        },
+        {
+          "id": "capstone-end-to-end-run",
+          "day": 85,
+          "dueDay": 86,
+          "kind": "exercise",
+          "title": "Run the capstone end to end on a rented GPU against two models",
+          "description": "E.g. two sizes from the same family."
+        },
+        {
+          "id": "capstone-performance-writeup",
+          "day": 86,
+          "dueDay": 87,
+          "kind": "exercise",
+          "title": "Capstone: performance write-up",
+          "description": "Profile one full run, find the bottleneck (client concurrency, GPU memory, tokenization,\nscoring), fix it, and report before/after wall-clock time and GPU utilization.\n"
+        },
+        {
+          "id": "capstone-readme",
+          "day": 88,
+          "kind": "exercise",
+          "title": "Capstone: README",
+          "description": "Architecture diagram, design decisions, what you would do at 1,000 times the scale."
+        },
+        {
+          "id": "capstone-demo-video",
+          "day": 89,
+          "kind": "exercise",
+          "title": "Record a 3-minute demo video and pin the repo on GitHub"
+        },
+        {
+          "id": "leetcode-week-13",
+          "day": 89,
+          "kind": "exercise",
+          "optional": true,
+          "title": "LeetCode: 1–2 mediums (heaps, graphs, intervals)",
+          "description": "Swap one build session this week for this, in case the loop includes a classic round."
+        },
+        {
+          "id": "real-benchmark-gain",
+          "day": 90,
+          "kind": "checkpoint",
+          "title": "I can say whether a 1.5-point benchmark gain is real, and how many questions I'd need to detect it."
+        },
+        {
+          "id": "platform-resumes-run",
+          "day": 90,
+          "kind": "checkpoint",
+          "title": "My platform resumes a half-finished run after I kill it."
+        },
+        {
+          "id": "capstone-runnable-from-readme",
+          "day": 90,
+          "kind": "checkpoint",
+          "title": "Someone else can run my capstone from the README in under 15 minutes."
+        },
+        {
+          "id": "learnings-week-13",
+          "day": 90,
+          "kind": "reflection",
+          "title": "Week 13 review",
+          "description": "Write 3 sentences on what you learned this week, and choose next week's tasks."
+        }
+      ]
+    },
+    {
+      "title": "Weeks 14–15: GPU fleet scheduling",
+      "goal": "Speak fluently about sharing scarce GPUs between training, evals and research.",
+      "description": "The \"capacity fleet management\" and \"dynamic resource optimization\" part of the posting.",
+      "tasks": [
+        {
+          "id": "borg-paper",
+          "day": 92,
+          "kind": "material",
+          "title": "Read: Large-scale cluster management at Google with Borg",
+          "description": "Priorities, quotas and preemption, the ancestor of Kubernetes.",
+          "links": [
+            {
+              "title": "Borg",
+              "url": "https://research.google/pubs/large-scale-cluster-management-at-google-with-borg/"
+            }
+          ]
+        },
+        {
+          "id": "philly-cluster-analysis",
+          "day": 92,
+          "kind": "material",
+          "title": "Read: Analysis of Large-Scale Multi-Tenant GPU Clusters (Microsoft Philly)",
+          "description": "Why real GPU fleets sit underused.",
+          "links": [
+            {
+              "title": "Philly GPU cluster analysis",
+              "url": "https://www.usenix.org/conference/atc19/presentation/jeon"
+            }
+          ]
+        },
+        {
+          "id": "kueue-two-queues",
+          "day": 93,
+          "dueDay": 96,
+          "kind": "exercise",
+          "title": "Install Kueue on your kind cluster with two queues and a shared quota",
+          "description": "Use a fake extended resource as \"GPUs.\" Define two queues (high-priority checkpoint evals,\nlow-priority nightly suite) with a shared quota.\n"
+        },
+        {
+          "id": "tiresias-gandiva",
+          "day": 94,
+          "kind": "material",
+          "optional": true,
+          "title": "Read: Tiresias and Gandiva, intro and design sections",
+          "description": "GPU-specific schedulers.",
+          "links": [
+            {
+              "title": "Tiresias",
+              "url": "https://www.usenix.org/conference/nsdi19/presentation/gu"
+            },
+            {
+              "title": "Gandiva",
+              "url": "https://www.usenix.org/conference/osdi18/presentation/xiao"
+            }
+          ]
+        },
+        {
+          "id": "leetcode-week-14",
+          "day": 96,
+          "kind": "exercise",
+          "optional": true,
+          "title": "LeetCode: 1–2 mediums (heaps, graphs, intervals)",
+          "description": "Swap one build session this week for this, in case the loop includes a classic round."
+        },
+        {
+          "id": "learnings-week-14",
+          "day": 97,
+          "kind": "reflection",
+          "title": "Week 14 review",
+          "description": "Write 3 sentences on what you learned this week, and choose next week's tasks."
+        },
+        {
+          "id": "megascale-paper",
+          "day": 99,
+          "kind": "material",
+          "title": "Read: MegaScale (ByteDance)",
+          "description": "Fault tolerance and diagnosis at 10,000+ GPUs.",
+          "links": [
+            {
+              "title": "MegaScale",
+              "url": "https://arxiv.org/abs/2402.15627"
+            }
+          ]
+        },
+        {
+          "id": "llama3-infrastructure",
+          "day": 99,
+          "kind": "material",
+          "title": "Read: the infrastructure section of The Llama 3 Herd of Models",
+          "description": "Real numbers on failures and interruptions at scale.",
+          "links": [
+            {
+              "title": "The Llama 3 Herd of Models",
+              "url": "https://arxiv.org/abs/2407.21783"
+            }
+          ]
+        },
+        {
+          "id": "kueue-preemption-demo",
+          "day": 100,
+          "dueDay": 102,
+          "kind": "exercise",
+          "title": "Show low-priority jobs being preempted and resuming",
+          "description": "Submit a burst of jobs and show low-priority jobs being preempted and then resuming, using your capstone's checkpointing."
+        },
+        {
+          "id": "kueue-and-ray-autoscaler-docs",
+          "day": 101,
+          "kind": "material",
+          "title": "Docs: Kueue and the Ray autoscaler",
+          "description": "Kueue: job queueing, quotas, fair sharing and preemption on Kubernetes.",
+          "links": [
+            {
+              "title": "Kueue overview",
+              "url": "https://kueue.sigs.k8s.io/docs/overview/"
+            },
+            {
+              "title": "Ray autoscaler",
+              "url": "https://docs.ray.io/en/latest/cluster/key-concepts.html"
+            }
+          ]
+        },
+        {
+          "id": "capstone-readme-scheduling",
+          "day": 103,
+          "kind": "exercise",
+          "title": "Add a \"Scheduling\" section to the capstone README"
+        },
+        {
+          "id": "leetcode-week-15",
+          "day": 103,
+          "kind": "exercise",
+          "optional": true,
+          "title": "LeetCode: 1–2 mediums (heaps, graphs, intervals)",
+          "description": "Swap one build session this week for this, in case the loop includes a classic round."
+        },
+        {
+          "id": "whiteboard-gang-scheduling",
+          "day": 104,
+          "kind": "checkpoint",
+          "title": "I can whiteboard gang scheduling: why a multi-GPU job needs all its GPUs at once."
+        },
+        {
+          "id": "whiteboard-bin-packing",
+          "day": 104,
+          "kind": "checkpoint",
+          "title": "I can whiteboard bin-packing and fragmentation: why 8 free GPUs spread over 8 nodes can be useless."
+        },
+        {
+          "id": "whiteboard-priority-preemption",
+          "day": 104,
+          "kind": "checkpoint",
+          "title": "I can whiteboard priority and preemption: new-checkpoint evals vs. nightly regression suite vs. ad hoc research."
+        },
+        {
+          "id": "whiteboard-idle-capacity",
+          "day": 104,
+          "kind": "checkpoint",
+          "title": "I can whiteboard opportunistic use of idle capacity, with checkpoint-and-resume so preemption costs little."
+        },
+        {
+          "id": "whiteboard-right-sizing",
+          "day": 104,
+          "kind": "checkpoint",
+          "title": "I can whiteboard right-sizing: replicas, tensor parallelism and batch size per eval to maximize throughput per GPU."
+        },
+        {
+          "id": "design-scheduling-policy",
+          "day": 104,
+          "kind": "checkpoint",
+          "title": "I can design a scheduling policy for evals sharing a fleet with training, and defend its trade-offs."
+        },
+        {
+          "id": "low-gpu-utilization-causes",
+          "day": 104,
+          "kind": "checkpoint",
+          "title": "I can explain the main causes of low GPU utilization and how to fix each."
+        },
+        {
+          "id": "learnings-week-15",
+          "day": 104,
+          "kind": "reflection",
+          "title": "Week 15 review",
+          "description": "Write 3 sentences on what you learned this week, and choose next week's tasks."
+        }
+      ]
+    },
+    {
+      "title": "Weeks 16–17: Interview prep",
+      "goal": "Turn 8 years of backend work plus the capstone into crisp answers for practical coding, system design, and past-project deep dives.",
+      "description": "**Practical coding** (5 one-hour timed sessions): these tend to look like real infrastructure\nwork, not puzzles. Practice from a blank file.\n\n**System design** (practice each out loud, 45 minutes): for each, cover the requirements and\nscale numbers, data model, scheduling, failure handling and resume, observability, and cost.\nReference: *System Design Interview* (Alex Xu), vol. 1 and 2, for format practice; your\ncapstone for content.\n",
+      "tasks": [
+        {
+          "id": "design-checkpoint-eval-platform",
+          "day": 106,
+          "kind": "exercise",
+          "title": "System design: a platform that runs thousands of evals on every new training checkpoint",
+          "description": "On a GPU fleet shared with training, flagging regressions within hours. 45 minutes, out loud.",
+          "links": [
+            {
+              "title": "System Design Interview, vol. 1–2 (Alex Xu)"
+            }
+          ]
+        },
+        {
+          "id": "story-bank",
+          "day": 106,
+          "dueDay": 117,
+          "kind": "exercise",
+          "title": "Fill in the story bank",
+          "description": "One story (situation, action, result) with numbers for each posting bullet.",
+          "noteTemplate": "| Posting bullet | My story (situation, action, result) | Numbers |\n| --- | --- | --- |\n| Highly reliable, easy-to-use infrastructure |  |  |\n| Collaborating with other teams on internal tooling |  |  |\n| Resolving a performance bottleneck |  |  |\n| Large-scale distributed systems |  |  |\n| Diving deep into a hard bug at any level of the stack |  |  |\n| Capstone: eval platform and benchmark report |  |  |\n"
+        },
+        {
+          "id": "coding-async-worker-pool",
+          "day": 107,
+          "kind": "exercise",
+          "title": "Timed coding: async worker pool",
+          "description": "A concurrency limit, per-task timeout, and retries with backoff. One hour, from a blank file."
+        },
+        {
+          "id": "design-eval-inference-layer",
+          "day": 108,
+          "kind": "exercise",
+          "title": "System design: the inference layer for evals",
+          "description": "Hundreds of model checkpoints, bursty demand, a fixed GPU budget. 45 minutes, out loud."
+        },
+        {
+          "id": "coding-token-bucket",
+          "day": 109,
+          "kind": "exercise",
+          "title": "Timed coding: token-bucket rate limiter",
+          "description": "Then make it safe across threads or coroutines. One hour, from a blank file."
+        },
+        {
+          "id": "coding-priority-scheduler",
+          "day": 110,
+          "kind": "exercise",
+          "title": "Timed coding: priority job scheduler with preemption",
+          "description": "Jobs have priority and GPU count; the cluster has N GPUs. One hour, from a blank file."
+        },
+        {
+          "id": "leetcode-week-16",
+          "day": 110,
+          "kind": "exercise",
+          "optional": true,
+          "title": "LeetCode: 1–2 mediums (heaps, graphs, intervals)",
+          "description": "Swap one build session this week for this, in case the loop includes a classic round."
+        },
+        {
+          "id": "learnings-week-16",
+          "day": 111,
+          "kind": "reflection",
+          "title": "Week 16 review",
+          "description": "Write 3 sentences on what you learned this week, and choose next week's tasks."
+        },
+        {
+          "id": "design-model-comparison-service",
+          "day": 113,
+          "kind": "exercise",
+          "title": "System design: a model comparison service",
+          "description": "Store every completion and score, and support slicing by benchmark, category and checkpoint. 45 minutes, out loud."
+        },
+        {
+          "id": "mock-system-design-interviews",
+          "day": 113,
+          "dueDay": 118,
+          "kind": "exercise",
+          "title": "Two mock system design interviews",
+          "description": "With a peer or a paid mock service."
+        },
+        {
+          "id": "coding-lru-prefix-cache",
+          "day": 114,
+          "kind": "exercise",
+          "title": "Timed coding: LRU cache with TTL, plus a prefix cache on token sequences",
+          "description": "The prefix cache is a simplified version of RadixAttention. One hour, from a blank file."
+        },
+        {
+          "id": "design-agentic-eval-runner",
+          "day": 115,
+          "kind": "exercise",
+          "title": "System design: the eval runner for agentic tasks",
+          "description": "Tasks run for an hour each in sandboxes (e.g. SWE-bench style). 45 minutes, out loud."
+        },
+        {
+          "id": "coding-streaming-accuracy",
+          "day": 116,
+          "kind": "exercise",
+          "title": "Timed coding: streaming per-model accuracy with confidence intervals",
+          "description": "Parse a large log of eval results, in bounded memory. One hour, from a blank file."
+        },
+        {
+          "id": "leetcode-week-17",
+          "day": 117,
+          "kind": "exercise",
+          "optional": true,
+          "title": "LeetCode: 1–2 mediums (heaps, graphs, intervals)",
+          "description": "Swap one build session this week for this, in case the loop includes a classic round."
+        },
+        {
+          "id": "why-evals-answer",
+          "day": 118,
+          "kind": "checkpoint",
+          "title": "I have a 2-minute \"why evals, why now\" answer that links my backend background to this role."
+        },
+        {
+          "id": "resume-updated",
+          "day": 118,
+          "kind": "exercise",
+          "title": "Update your resume",
+          "description": "Capstone and benchmark report near the top, with numbers."
+        },
+        {
+          "id": "learnings-week-17",
+          "day": 118,
+          "kind": "reflection",
+          "title": "Week 17 review",
+          "description": "Write 3 sentences on what you learned over the whole path."
+        }
+      ]
+    }
+  ]
+};
+
+// ---------- date helpers (plain YYYY-MM-DD, UTC math) ----------
+const toMs = s => Date.parse(s + "T00:00:00Z");
+const addDays = (s, n) => new Date(toMs(s) + n * 864e5).toISOString().slice(0, 10);
+const diffDays = (a, b) => Math.round((toMs(a) - toMs(b)) / 864e5);
+const fmt = s => new Date(toMs(s)).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
+const wd = s => new Date(toMs(s)).toLocaleDateString("en-GB", { weekday: "short", timeZone: "UTC" });
+
+// ---------- flatten path ----------
+const TASKS = [];
+PATH.blocks.forEach((b, bi) => b.tasks.forEach(t => TASKS.push({ ...t, block: bi, order: TASKS.length })));
+const BY_ID = Object.fromEntries(TASKS.map(t => [t.id, t]));
+
+// ---------- in-memory Enrollment (ticket 007 model) ----------
+const START = "2026-11-16"; // a Monday
+let S; // { today, ts:{id:{status,statusDate,offset}}, notes:{key:text}, shifts:[], skippedForNow:Set }
+function fresh(today) { return { today, ts: {}, notes: {}, shifts: [], later: new Set(), sel: null, view: null, open: new Set() }; }
+
+const st = id => S.ts[id] || { status: "todo", offset: 0 };
+const status = t => st(t.id).status;
+const effDay = t => t.day + (st(t.id).offset || 0);
+const effDue = t => (t.dueDay ?? t.day) + (st(t.id).offset || 0);
+const dateOf = d => addDays(START, d - 1);
+const dayNo = () => diffDays(S.today, START) + 1;
+const lastDay = () => Math.max(...TASKS.map(effDue));
+const blockOfDay = d => { let bi = 0; PATH.blocks.forEach((b, i) => { if (Math.min(...b.tasks.map(t => t.day)) <= d) bi = i; }); return bi; };
+const rhythm = d => (PATH.weekRhythm || [])[((d - 1) % 7 + 7) % 7] || "";
+const weekOf = d => Math.floor((d - 1) / 7) + 1;
+const sortT = a => a.sort((x, y) => effDay(x) - effDay(y) || x.order - y.order);
+
+function buckets() {
+  const D = dayNo();
+  const overdue = sortT(TASKS.filter(t => !t.optional && status(t) === "todo" && effDue(t) < D));
+  const today = sortT(TASKS.filter(t => effDay(t) === D));
+  const ongoing = sortT(TASKS.filter(t => status(t) === "todo" && effDay(t) < D && effDue(t) >= D));
+  const doneToday = TASKS.filter(t => st(t.id).statusDate === S.today && status(t) === "done" && effDay(t) !== D && !(effDay(t) < D && effDue(t) >= D));
+  return { D, overdue, today, ongoing, doneToday };
+}
+function stats() {
+  const req = TASKS.filter(t => !t.optional);
+  const done = req.filter(t => status(t) === "done").length;
+  const bonus = TASKS.filter(t => t.optional && status(t) === "done").length;
+  // streak: walk back from today; days with nothing scheduled are skipped; today only counts if done
+  const doneOn = new Set(TASKS.filter(t => status(t) === "done").map(t => st(t.id).statusDate));
+  const sched = new Set(TASKS.map(t => dateOf(effDay(t))));
+  let streak = 0, d = S.today;
+  if (doneOn.has(d)) streak++;
+  d = addDays(d, -1);
+  while (diffDays(d, START) >= 0) {
+    if (doneOn.has(d)) streak++;
+    else if (sched.has(d)) break;
+    d = addDays(d, -1);
+  }
+  const perBlock = PATH.blocks.map((b, bi) => { const r = TASKS.filter(t => t.block === bi && !t.optional); return { n: r.length, done: r.filter(t => status(t) === "done").length }; });
+  return { pct: Math.round(100 * done / req.length), done, req: req.length, bonus, streak, perBlock };
+}
+
+// ---------- actions ----------
+function setStatus(id, s) {
+  const cur = st(id);
+  if (s === "todo") S.ts[id] = { status: "todo", offset: cur.offset || 0 };
+  else S.ts[id] = { ...cur, status: s, statusDate: S.today };
+}
+function shift(n) {
+  n = Math.max(1, Math.floor(n || 0));
+  const ids = TASKS.filter(t => status(t) === "todo").map(t => t.id);
+  ids.forEach(id => { const c = st(id); S.ts[id] = { ...c, offset: (c.offset || 0) + n }; });
+  S.shifts.push({ appliedOn: S.today, days: n, taskIds: ids });
+}
+function undoShift() {
+  const s = S.shifts.pop(); if (!s) return;
+  s.taskIds.forEach(id => { const c = st(id); S.ts[id] = { ...c, offset: c.offset - s.days }; });
+}
+const noteKey = (kind, id) => kind + ":" + id;
+function noteVal(kind, id) {
+  const k = noteKey(kind, id);
+  if (!(k in S.notes) && kind === "task" && BY_ID[id]?.noteTemplate) S.notes[k] = BY_ID[id].noteTemplate; // template on first open
+  return S.notes[k] ?? "";
+}
+
+// ---------- scenarios ----------
+const hash = s => { let h = 7; for (const c of s) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h % 100; };
+function seedHistory(D) {
+  // A plausible learner: most past Tasks done on their day, a few skipped, a few left behind (overdue)
+  TASKS.forEach(t => {
+    if (t.day >= D) return;
+    const h = hash(t.id);
+    if (t.optional) { if (h < 45) S.ts[t.id] = { status: "done", statusDate: dateOf(t.dueDay ?? t.day), offset: 0 }; return; }
+    if ((t.dueDay ?? t.day) >= D) { if (h < 25) S.ts[t.id] = { status: "done", statusDate: dateOf(D - 1), offset: 0 }; return; }
+    if (h < 93) S.ts[t.id] = { status: "done", statusDate: dateOf(Math.min(D - 1, (t.dueDay ?? t.day))), offset: 0 };
+    else if (h < 96) S.ts[t.id] = { status: "skipped", statusDate: dateOf(t.day), offset: 0 };
+  });
+}
+const SCENARIOS = {
+  before: { label: "Before start (3 days to go)", make: () => fresh(addDays(START, -3)) },
+  day2: { label: "Week 1 Tue · fresh start", make: () => { S = fresh(dateOf(2)); seedHistory(2); return S; } },
+  day24: { label: "Week 4 Wed · some overdue", make: () => { const s = fresh(dateOf(24)); S = s; seedHistory(24); return S; } },
+  day78: { label: "Week 12 Mon · 'Study' over build", make: () => { S = fresh(dateOf(78)); seedHistory(78); return S; } },
+  day104: { label: "Week 15 Sat · 8 Tasks", make: () => { S = fresh(dateOf(104)); seedHistory(104); return S; } },
+  after: { label: "After the end", make: () => { S = fresh(dateOf(124)); seedHistory(119); return S; } },
+};
+
+// ---------- mini markdown ----------
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+function md(s) {
+  if (!s) return "";
+  return esc(s).split(/\n\s*\n/).map(p => "<p>" + p
+    .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\[([^\]]+)\]\((https?:[^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
+    .replace(/(^|\n)\s*- /g, "$1• ").replace(/\n/g, "<br>") + "</p>").join("");
+}
+const links = t => (t.links || []).map(l => l.url ? `<a href="${esc(l.url)}" target="_blank">${esc(l.title)}</a>` : `<span class="muted">📖 ${esc(l.title)}</span>`).join(" · ");
+const kindTag = t => `<span class="tag">${t.kind}</span>${t.optional ? '<span class="tag opt">optional</span>' : ""}`;
+function when(t, D) {
+  const d = effDay(t), due = effDue(t);
+  if (status(t) === "done") return `<span class="tag ok">done ${st(t.id).statusDate === S.today ? "today" : fmt(st(t.id).statusDate)}</span>`;
+  if (status(t) === "skipped") return `<span class="tag">skipped</span>`;
+  if (due < D) return `<span class="tag over">${D - due} day${D - due > 1 ? "s" : ""} overdue</span>`;
+  if (due > d) return `<span class="small muted">day ${D - d + 1} of ${due - d + 1} · due ${wd(dateOf(due))}</span>`;
+  return "";
+}
+
+// ---------- shared edge states (Q11/Q12 of ticket 007) ----------
+function edgeState(D) {
+  if (D < 1) {
+    const day1 = sortT(TASKS.filter(t => effDay(t) === 1));
+    return { kind: "before", html: `<div class="edge"><h2 style="margin:0">Starts in ${1 - D} day${1 - D > 1 ? "s" : ""}</h2>
+      <div class="muted">${esc(PATH.title)} · day 1 is ${fmt(START)}</div>
+      <p class="small muted">Preview of day 1. You can tick things off early.</p></div>`, list: day1 };
+  }
+  if (D > lastDay()) {
+    const s = stats();
+    return { kind: "after", html: `<div class="edge"><h2 style="margin:0">Path finished</h2>
+      <p>${s.pct}% of required Tasks done (${s.done}/${s.req}) · ${s.bonus} bonus · ${s.streak}-day streak</p>
+      <p class="small muted">The Enrollment stays active until you switch. Anything still overdue is below.</p></div>` };
+  }
+  return null;
+}
+function shiftCtl(compact) {
+  const last = S.shifts[S.shifts.length - 1];
+  return `<span class="small">Shift every open Task by <input type="number" id="shiftN" value="1" min="1"> day(s)
+    <button class="btn" data-act="shift">Shift</button>
+    ${last ? `<button class="btn ghost" data-act="undo">Undo +${last.days}d</button>` : ""}</span>`;
+}
+
+// ======================= Variant A: Checklist =======================
+function VariantA() {
+  const { D, overdue, today, ongoing, doneToday } = buckets(); const s = stats();
+  const edge = edgeState(D);
+  const row = t => `<div class="a-row">
+      <input type="checkbox" data-act="toggle" data-id="${t.id}" ${status(t) === "done" ? "checked" : ""}>
+      <div class="body">
+        <div class="${status(t) !== "todo" ? "done-title" : ""}">${kindTag(t)} ${esc(t.title)}</div>
+        <div class="meta">${when(t, D)} ${status(t) === "todo" ? `<button class="btn ghost small" data-act="skip" data-id="${t.id}">skip</button>` : (status(t) === "skipped" ? `<button class="btn ghost small" data-act="todo" data-id="${t.id}">undo skip</button>` : "")}
+          <button class="btn ghost small" data-act="expand" data-id="${t.id}">${S.open.has(t.id) ? "less" : "more"}</button></div>
+        ${S.open.has(t.id) ? `<div class="desc">${md(t.description)}${links(t) ? `<p>${links(t)}</p>` : ""}
+          <textarea data-note="task:${t.id}" placeholder="Note on this Task (Markdown)">${esc(noteVal("task", t.id))}</textarea></div>` : ""}
+      </div></div>`;
+  const b = PATH.blocks[blockOfDay(Math.max(1, Math.min(D, 118)))];
+  let h = `<div class="wrap">`;
+  if (edge) h += edge.html;
+  if (!edge || edge.kind === "after") {
+    h += !edge ? `<div class="a-head"><div class="muted small">Day ${D} · week ${weekOf(D)} · ${fmt(S.today)}${rhythm(D) ? " · " + rhythm(D) + " day" : ""}</div>
+      <h1>Today</h1></div>
+      <div class="a-stats"><span><b>${s.pct}%</b> of required done</span><span><b>+${s.bonus}</b> bonus</span><span><b>${s.streak}</b>-day streak</span></div>
+      <div class="a-goal"><div class="small muted">${esc(b.title)}</div><div>${esc(b.goal)}</div></div>` : "";
+    if (overdue.length) h += `<div class="a-sec"><h2><span>Overdue · ${overdue.length}</span>${shiftCtl()}</h2><div class="a-over">${overdue.map(row).join("")}</div></div>`;
+    else if (S.shifts.length && !edge) h += `<div class="a-sec small muted">Nothing overdue. ${shiftCtl()}</div>`;
+    if (!edge) {
+      h += `<div class="a-sec"><h2>Today · ${today.length}</h2>${today.length ? today.map(row).join("") : `<div class="muted">Nothing scheduled today.</div>`}</div>`;
+      if (ongoing.length) h += `<div class="a-sec"><h2>Still open · ${ongoing.length}</h2>${ongoing.map(row).join("")}</div>`;
+      if (doneToday.length) h += `<div class="a-sec"><h2>Also done today</h2>${doneToday.map(row).join("")}</div>`;
+    }
+  } else h += edge.list.map(row).join("");
+  if (!edge || edge.kind !== "before") h += `<div class="a-sec"><h2>Day note · ${fmt(S.today)}</h2><textarea data-note="day:${S.today}" placeholder="What happened today? Links, findings…">${esc(noteVal("day", S.today))}</textarea></div>`;
+  return h + `</div>`;
+}
+
+// ======================= Variant B: Week board + notes pane =======================
+function VariantB() {
+  const { D, overdue, today, ongoing, doneToday } = buckets(); const s = stats();
+  const edge = edgeState(D);
+  const card = (t, over) => `<div class="b-card ${S.sel === t.id ? "sel" : ""} ${over ? "over" : ""}" data-act="select" data-id="${t.id}">
+      <div class="small">${kindTag(t)}</div>
+      <div class="${status(t) !== "todo" ? "done-title" : ""}">${esc(t.title)}</div>
+      <div style="margin-top:4px">${when(t, D)}</div></div>`;
+  const col = (title, list, over, extra = "") => `<div class="b-col"><h3><span>${title}</span><span class="muted">${list.length}</span></h3>${extra}${list.map(t => card(t, over)).join("") || `<div class="small muted" style="padding:4px">—</div>`}</div>`;
+  const wk = Math.max(1, weekOf(Math.max(1, D)));
+  const week = [...Array(7)].map((_, i) => {
+    const d = (wk - 1) * 7 + i + 1; const ts = TASKS.filter(t => effDay(t) === d);
+    const dots = ts.map(t => status(t) === "done" ? "●" : status(t) === "skipped" ? "◌" : (effDue(t) < D && !t.optional ? `<span style="color:var(--warn)">●</span>` : "○")).join("");
+    return `<div class="b-day ${d === D ? "today" : ""} ${d === S.view ? "viewing" : ""}" data-act="viewday" data-day="${d}"><b>${wd(dateOf(d))}</b> <span class="muted">${rhythm(d) || "off"}</span><div class="dots">${dots}</div></div>`;
+  }).join("");
+  const sel = S.sel && BY_ID[S.sel];
+  const V = S.view ?? D, vDate = dateOf(V);
+  const viewList = S.view == null ? today : sortT(TASKS.filter(t => effDay(t) === V));
+  const b = PATH.blocks[blockOfDay(Math.max(1, Math.min(D, 118)))];
+  const side = `<aside class="b-side">
+    ${sel ? `<h3>${esc(sel.title)}</h3><div class="small">${kindTag(sel)} ${when(sel, D)}</div><div class="desc">${md(sel.description)}</div>${links(sel) ? `<p class="small">${links(sel)}</p>` : ""}
+      <div class="c-actions" style="margin-top:6px">
+        ${status(sel) === "done" ? `<button class="btn" data-act="todo" data-id="${sel.id}">Mark not done</button>` : `<button class="btn primary" data-act="done" data-id="${sel.id}">Done</button>`}
+        ${status(sel) === "todo" ? `<button class="btn" data-act="skip" data-id="${sel.id}">Skip</button>` : ""}
+      </div>
+      <h3 style="margin-top:12px">Task note</h3><textarea data-note="task:${sel.id}">${esc(noteVal("task", sel.id))}</textarea><hr style="border:0;border-top:1px solid var(--line);margin:14px 0">`
+      : `<div class="small muted" style="margin-bottom:10px">Select a card to see details and its note.</div>`}
+    <h3>Day note · ${fmt(S.view == null ? S.today : vDate)}</h3><textarea style="min-height:160px" data-note="day:${S.view == null ? S.today : vDate}" placeholder="Findings, links, thoughts">${esc(noteVal("day", S.view == null ? S.today : vDate))}</textarea>
+    <h3 style="margin-top:12px">Block goal</h3><div class="small"><b>${esc(b.title)}</b><br>${esc(b.goal)}</div>
+  </aside>`;
+  let main = "";
+  if (edge && edge.kind === "before") main = edge.html + `<div class="b-cols" style="grid-template-columns:1fr">${col("Day 1 preview", edge.list)}</div>`;
+  else if (edge) main = edge.html + `<div class="b-cols" style="grid-template-columns:1fr">${col("Still overdue", overdue, true, overdue.length ? `<div class="small" style="margin:0 4px 8px">${shiftCtl()}</div>` : "")}</div>`;
+  else main = `<div class="b-week">${week}</div><div class="b-cols">
+      ${col("Catch up", overdue, true, overdue.length || S.shifts.length ? `<div class="small" style="margin:0 4px 8px">${shiftCtl()}</div>` : "")}
+      ${S.view == null ? col(`Today · ${rhythm(D) || "off day"}`, today) : col(`${fmt(vDate)} · ${rhythm(V) || "off day"} ${V < D ? "(past)" : "(ahead)"}`, viewList, false, `<button class="btn ghost small" data-act="viewday" data-day="${D}">← back to today</button>`)}
+      ${col("In progress", ongoing)}</div>
+      ${doneToday.length ? `<div class="small muted" style="margin-top:10px">Also done today: ${doneToday.map(t => esc(t.title)).join(" · ")}</div>` : ""}`;
+  return `<div class="b-wrap">
+    <div class="b-top"><div><b>${esc(PATH.title)}</b><div class="small muted">${D >= 1 ? `Week ${wk} of 17 · day ${D} · ` : ""}${fmt(S.today)}</div></div>
+      <div class="small"><b>${s.pct}%</b> · +${s.bonus} bonus · ${s.streak}-day streak</div>
+      <div class="b-progress" title="Required Tasks done, per Block">${s.perBlock.map((p, i) => `<div style="flex:${p.n}" title="${esc(PATH.blocks[i].title)}"><span style="width:${100 * p.done / p.n}%"></span></div>`).join("")}</div></div>
+    <main>${main}</main>${side}</div>`;
+}
+
+// ======================= Variant C: Focus, one thing at a time =======================
+function VariantC() {
+  const { D, overdue, today, ongoing, doneToday } = buckets(); const s = stats();
+  const edge = edgeState(D);
+  let queue = edge && edge.kind === "before" ? edge.list.filter(t => status(t) === "todo")
+    : [...overdue, ...(edge ? [] : today.filter(t => status(t) === "todo")), ...(edge ? [] : ongoing)];
+  queue = [...queue.filter(t => !S.later.has(t.id)), ...queue.filter(t => S.later.has(t.id))];
+  const next = queue[0];
+  const R = 36, C = 2 * Math.PI * R;
+  const ring = `<svg class="c-ring" viewBox="0 0 84 84"><circle cx="42" cy="42" r="${R}" fill="none" stroke="var(--chip)" stroke-width="8"/>
+    <circle cx="42" cy="42" r="${R}" fill="none" stroke="var(--accent)" stroke-width="8" stroke-linecap="round" stroke-dasharray="${C * s.pct / 100} ${C}" transform="rotate(-90 42 42)"/>
+    <text x="42" y="47" text-anchor="middle" font-size="17" font-weight="600" fill="var(--ink)">${s.pct}%</text></svg>`;
+  const b = PATH.blocks[blockOfDay(Math.max(1, Math.min(D, 118)))];
+  let h = `<div class="wrap"><div class="c-top">${ring}<div><div style="font-size:20px"><b>${s.streak}</b>-day streak · <b>+${s.bonus}</b> bonus</div>
+    <div class="small muted">${D >= 1 ? `Day ${D} · ${rhythm(D) ? rhythm(D) + " day · " : ""}` : ""}${fmt(S.today)} · ${esc(b.title)}</div></div></div>`;
+  if (edge) h += edge.html;
+  if (overdue.length && (!edge || edge.kind === "after")) h += `<div class="c-banner" style="margin-top:14px"><span>${overdue.length} Task${overdue.length > 1 ? "s" : ""} behind schedule — they come first.</span>${shiftCtl()}</div>`;
+  if (next) {
+    const ix = edge && edge.kind === "before" ? "Day 1 preview" : overdue.includes(next) ? "Catching up" : ongoing.includes(next) ? "Continue" : "Up next";
+    h += `<div class="c-card"><div class="small muted">${ix} · ${queue.length - 1} more after this</div>
+      <div style="margin-top:6px">${kindTag(next)} ${when(next, D)}</div>
+      <h2>${esc(next.title)}</h2><div class="desc">${md(next.description)}</div>${links(next) ? `<p>${links(next)}</p>` : ""}
+      <textarea data-note="task:${next.id}" placeholder="Quick note on this Task">${esc(noteVal("task", next.id))}</textarea>
+      <div class="c-actions"><button class="btn primary" data-act="done" data-id="${next.id}">${next.kind === "checkpoint" ? "Yes, I can" : next.kind === "exercise" && effDue(next) > D ? "Finished it" : "Done"}</button>
+        ${next.kind === "exercise" && effDue(next) >= D ? `<button class="btn" data-act="later" data-id="${next.id}">Worked on it, not finished</button>` : `<button class="btn" data-act="later" data-id="${next.id}">Not now</button>`}
+        <button class="btn ghost" data-act="skip" data-id="${next.id}">Skip</button></div></div>`;
+  } else if (!edge || edge.kind !== "after") h += `<div class="c-card"><h2>All clear for today.</h2><div class="muted">Write a line in the day note, or look ahead on the Path screen.</div></div>`;
+  if (queue.length > 1) h += `<h3 class="small muted" style="text-transform:uppercase;letter-spacing:.06em">Then</h3>` + queue.slice(1).map(t => `<div class="c-q"><span class="small">${kindTag(t)}</span><span style="flex:1">${esc(t.title)}</span>${when(t, D)}</div>`).join("");
+  const doneList = [...today.filter(t => status(t) === "done" && st(t.id).statusDate === S.today), ...doneToday];
+  if (doneList.length) h += `<h3 class="small muted" style="text-transform:uppercase;letter-spacing:.06em;margin-top:20px">Done today</h3><div class="c-chips">${doneList.map(t => `<span>${esc(t.title.slice(0, 48))}${t.title.length > 48 ? "…" : ""}</span>`).join("")}</div>`;
+  if (!edge || edge.kind !== "before") h += `<details style="margin-top:20px"><summary class="muted">Day note · ${fmt(S.today)}</summary><textarea data-note="day:${S.today}">${esc(noteVal("day", S.today))}</textarea></details>`;
+  return h + `</div>`;
+}
+
+// ---------- switcher + wiring ----------
+const VARIANTS = [["A", "Checklist", VariantA], ["B", "Week board + notes pane", VariantB], ["C", "Focus, one at a time", VariantC]];
+const params = new URLSearchParams(location.search);
+let vi = Math.max(0, VARIANTS.findIndex(v => v[0] === (params.get("variant") || "A")));
+let scen = SCENARIOS[params.get("scenario")] ? params.get("scenario") : "day24";
+S = SCENARIOS[scen].make();
+const sel = document.getElementById("scenario");
+sel.innerHTML = Object.entries(SCENARIOS).map(([k, v]) => `<option value="${k}" ${k === scen ? "selected" : ""}>${v.label}</option>`).join("");
+
+function render() {
+  document.getElementById("app").innerHTML = VARIANTS[vi][2]();
+  document.getElementById("vlabel").textContent = `${VARIANTS[vi][0]} (${VARIANTS[vi][1]})`;
+  const q = new URLSearchParams(location.search); q.set("variant", VARIANTS[vi][0]); q.set("scenario", scen);
+  history.replaceState(null, "", "?" + q);
+  const { D, overdue, today, ongoing } = buckets(); const s = stats();
+  document.getElementById("state").textContent = JSON.stringify({
+    today: S.today, dayNumber: D, rhythmLabel: rhythm(D) || null, lastEffectiveDay: lastDay(),
+    derived: { percent: s.pct, requiredDone: `${s.done}/${s.req}`, bonus: s.bonus, streak: s.streak, overdue: overdue.length, todayTasks: today.length, stillOpen: ongoing.length },
+    shifts: S.shifts.map(x => ({ appliedOn: x.appliedOn, days: x.days, tasksMoved: x.taskIds.length })),
+    taskStateRecords: Object.keys(S.ts).length,
+    notes: Object.fromEntries(Object.entries(S.notes).filter(([, v]) => v)),
+  }, null, 2);
+}
+document.addEventListener("click", e => {
+  const a = e.target.closest("[data-act]"), b = e.target.closest("[data-bar]");
+  if (a) {
+    const id = a.dataset.id;
+    switch (a.dataset.act) {
+      case "toggle": setStatus(id, status(BY_ID[id]) === "done" ? "todo" : "done"); break;
+      case "done": setStatus(id, "done"); S.later.delete(id); break;
+      case "todo": setStatus(id, "todo"); break;
+      case "skip": setStatus(id, "skipped"); break;
+      case "later": S.later.add(id); break;
+      case "expand": S.open.has(id) ? S.open.delete(id) : S.open.add(id); break;
+      case "select": S.sel = S.sel === id ? null : id; break;
+      case "viewday": { const d = +a.dataset.day; S.view = (d === dayNo() || d === S.view) ? null : d; break; }
+      case "shift": shift(+document.getElementById("shiftN").value); break;
+      case "undo": undoShift(); break;
+    }
+    render();
+  }
+  if (b) {
+    const k = b.dataset.bar;
+    if (k === "prev") vi = (vi + VARIANTS.length - 1) % VARIANTS.length;
+    if (k === "next") vi = (vi + 1) % VARIANTS.length;
+    if (k === "dayback" || k === "dayfwd") { S.today = addDays(S.today, k === "dayfwd" ? 1 : -1); S.later.clear(); S.view = null; }
+    if (k === "state") { const p = document.getElementById("state"); p.style.display = p.style.display === "block" ? "none" : "block"; }
+    render();
+  }
+});
+document.addEventListener("input", e => { const k = e.target.dataset?.note; if (k) { S.notes[k] = e.target.value; } });
+sel.addEventListener("change", () => { scen = sel.value; S = SCENARIOS[scen].make(); render(); });
+document.addEventListener("keydown", e => {
+  if (e.target.closest("input,textarea,select,[contenteditable]")) return;
+  if (e.key === "ArrowLeft") { vi = (vi + VARIANTS.length - 1) % VARIANTS.length; render(); }
+  if (e.key === "ArrowRight") { vi = (vi + 1) % VARIANTS.length; render(); }
+});
+render();
+</script>
+</body>
+</html>

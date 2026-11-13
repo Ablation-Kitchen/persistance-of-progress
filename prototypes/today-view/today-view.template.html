@@ -1,0 +1,403 @@
+<!doctype html>
+<!--
+  PROTOTYPE, throwaway. Ticket 008, chosen direction: variant B (week board + notes pane)
+  with A's inline expand and A's stacking order, in the ablation.kitchen look.
+  Real data (samples/eval-infra-17-weeks.yaml) is embedded by build.sh. State is in memory only.
+  Rules: tickets 007 (amended streak: a day counts if a Task was done or a Note was edited) and 009.
+  The three-variant comparison is kept in today-prototype.html.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Today View</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F7F6F3;--surface:#FFFFFF;--ink:#111111;--soft:#3B3B38;--meta:#6A6A66;--rule:#E4E2DC;--accent:#E4572E;--accentText:#B83D1A;--done:#2F6F5E;--shadow:rgba(0,0,0,.35)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0C0C0B;--surface:#141413;--ink:#EDEBE6;--soft:#C7C4BC;--meta:#9A9A95;--rule:#262624;--accent:#FF6A3D;--accentText:#FF7A52;--done:#6CC2A8;--shadow:rgba(0,0,0,.8)}}
+:root[data-theme="dark"]{--bg:#0C0C0B;--surface:#141413;--ink:#EDEBE6;--soft:#C7C4BC;--meta:#9A9A95;--rule:#262624;--accent:#FF6A3D;--accentText:#FF7A52;--done:#6CC2A8;--shadow:rgba(0,0,0,.8)}
+*{box-sizing:border-box}
+html{-webkit-font-smoothing:antialiased}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.6 'Inter Tight',system-ui,sans-serif;padding-bottom:110px;transition:background-color .5s cubic-bezier(.2,.7,.2,1),color .5s}
+a{color:var(--accentText);text-decoration:none}a:hover{text-decoration:underline}
+button{font:inherit;color:inherit;cursor:pointer}
+.mono{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--meta);letter-spacing:0}
+.serif{font-family:'Instrument Serif',Georgia,serif;font-weight:400}
+.wrap{max-width:1240px;margin:0 auto;padding:0 40px}
+@media (max-width:700px){.wrap{padding:0 16px}}
+/* header */
+header{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--rule)}
+nav{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 0}
+.brand{font-family:'JetBrains Mono',monospace;font-size:14px;display:flex;align-items:center;gap:10px}
+.brand b{color:var(--accentText);font-weight:400}
+.navlinks{display:flex;align-items:center;gap:4px 28px;font-size:14px;flex-wrap:wrap}
+.navlink{position:relative;padding:6px 0;color:var(--soft)}
+.navlink.on{color:var(--ink);font-weight:500}
+.navlink.on::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:currentColor}
+.pill{min-height:40px;padding:0 16px;border:1px solid var(--rule);border-radius:999px;background:var(--surface);display:inline-flex;align-items:center;gap:8px;transition:transform .3s cubic-bezier(.2,.7,.2,1),background-color .3s,border-color .3s}
+.pill:hover{transform:translateY(-1px);border-color:var(--meta)}
+.pill.solid{background:var(--ink);color:var(--bg);border-color:var(--ink);font-weight:500}
+.pill.sm{min-height:32px;padding:0 12px;font-size:13px}
+.pill.ghost{background:transparent;border-color:transparent;color:var(--meta)}
+.pill.ghost:hover{color:var(--ink);border-color:var(--rule)}
+/* hero */
+.hero{padding:56px 0 28px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:24px 48px;align-items:end}
+@media (max-width:900px){.hero{grid-template-columns:1fr;padding-top:36px}}
+.eyebrow{display:flex;align-items:center;gap:10px;margin:0 0 18px}
+.dot{width:7px;height:7px;border-radius:999px;background:var(--accent);flex:none;display:inline-block}
+@media (prefers-reduced-motion:no-preference){.pulse{animation:pulse 2.4s ease-in-out infinite}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.rise{animation:rise .7s cubic-bezier(.2,.7,.2,1) both}@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}}
+h1{margin:0;font-size:clamp(48px,7vw,96px);line-height:1;letter-spacing:-.025em}
+h1 em{color:var(--accentText)}
+.goal{margin:18px 0 0;max-width:620px;font-size:19px;font-weight:300;color:var(--soft)}
+.stats{display:grid;grid-template-columns:repeat(3,auto);gap:12px 40px;margin:0}
+.stats div{display:flex;flex-direction:column-reverse;gap:2px}
+.stats dt{font-size:13px;color:var(--meta)} .stats dd{margin:0;font-family:'Instrument Serif',Georgia,serif;font-size:44px;line-height:1}
+.blocks{display:flex;gap:4px;margin:4px 0 0;grid-column:1/-1}
+.blocks div{height:4px;border-radius:2px;background:var(--rule);position:relative;overflow:hidden}
+.blocks span{position:absolute;inset:0 auto 0 0;background:var(--accent)}
+/* layout */
+.board{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:24px;align-items:start;padding-bottom:40px}
+@media (max-width:980px){.board{grid-template-columns:1fr}}
+.week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;margin-bottom:20px}
+.day{text-align:left;background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:10px 10px 12px;min-height:76px;transition:transform .35s cubic-bezier(.2,.7,.2,1),border-color .3s,box-shadow .35s}
+.day:hover{transform:translateY(-2px);box-shadow:0 14px 30px -22px var(--shadow)}
+.day .d{font-family:'Instrument Serif',Georgia,serif;font-size:22px;line-height:1}
+.day .lbl{display:block;margin-top:4px}
+.day .dots{margin-top:8px;display:flex;gap:4px;flex-wrap:wrap}
+.day .dots i{width:6px;height:6px;border-radius:999px;border:1px solid var(--meta);display:block}
+.day .dots i.done{background:var(--done);border-color:var(--done)} .day .dots i.over{background:var(--accent);border-color:var(--accent)} .day .dots i.skip{border-style:dashed;opacity:.6}
+.day.today{border-color:var(--ink)} .day.viewing{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+@media (max-width:640px){.day{padding:8px 6px;min-height:64px}.day .d{font-size:17px}.day .lbl{display:none}}
+.cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+@media (max-width:760px){.cols{grid-template-columns:1fr}}
+.col{background:var(--surface);border:1px solid var(--rule);border-radius:14px;padding:16px;min-height:160px}
+.col h2{margin:0 0 4px;font-size:28px;line-height:1.05;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.col h2 .mono{font-size:12px}
+.col .sub{margin:0 0 12px}
+.card{background:var(--bg);border:1px solid var(--rule);border-radius:12px;padding:12px 12px 10px;margin-top:10px;transition:transform .45s cubic-bezier(.2,.7,.2,1),border-color .3s,box-shadow .45s cubic-bezier(.2,.7,.2,1)}
+.card:hover{transform:translateY(-3px);box-shadow:0 18px 40px -26px var(--shadow)}
+.card.sel{border-color:var(--ink)}
+.card-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.kind{display:flex;align-items:center;gap:6px}
+.card-main{display:flex;gap:10px;align-items:flex-start;margin-top:8px}
+.check{flex:none;width:24px;height:24px;margin-top:1px;border-radius:999px;border:1.5px solid var(--meta);background:transparent;display:grid;place-items:center;padding:0}
+.check:hover{border-color:var(--ink)}
+.check.on{background:var(--done);border-color:var(--done);color:var(--bg)}
+.title-btn{all:unset;cursor:pointer;flex:1;min-width:0;font-size:15px;line-height:1.4}
+.title-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+.struck{text-decoration:line-through;color:var(--meta)}
+.card-foot{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;margin-top:8px;padding-left:34px}
+.linkbtn{background:none;border:0;padding:4px 0;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--meta)}
+.linkbtn:hover{color:var(--ink)}
+.status-over{color:var(--accentText)} .status-ok{color:var(--done)}
+.desc{font-size:14px;color:var(--soft);padding-left:34px}
+.desc p{margin:.5em 0}
+code{font-family:'JetBrains Mono',monospace;font-size:.85em;background:var(--surface);border:1px solid var(--rule);padding:0 4px;border-radius:4px}
+.empty{padding:14px 2px}
+/* side */
+aside{background:var(--surface);border:1px solid var(--rule);border-radius:14px;padding:20px;position:sticky;top:84px}
+@media (max-width:980px){aside{position:static}}
+aside h3{margin:0 0 6px;font-size:26px;line-height:1.05}
+aside .sec{padding-top:18px;margin-top:18px;border-top:1px solid var(--rule)}
+textarea{width:100%;min-height:96px;font:300 15px/1.55 'Inter Tight',system-ui,sans-serif;background:var(--bg);color:var(--ink);border:1px solid var(--rule);border-radius:10px;padding:10px 12px;resize:vertical}
+textarea:focus{outline:none;border-color:var(--ink)}
+label.mono{display:block;margin-bottom:6px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.shift{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 6px}
+.shift input{width:52px;min-height:32px;font:inherit;font-size:13px;background:var(--bg);color:var(--ink);border:1px solid var(--rule);border-radius:999px;padding:0 10px}
+.edge{background:var(--surface);border:1px solid var(--rule);border-radius:14px;padding:24px;margin-bottom:20px}
+.edge h2{margin:0;font-size:44px;line-height:1}
+/* prototype bar (not part of the design) */
+#bar{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);background:#0E0E0D;color:#E9E6DF;border-radius:999px;padding:6px 8px 6px 16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;box-shadow:0 10px 30px rgba(0,0,0,.35);font:12px 'JetBrains Mono',monospace;max-width:calc(100vw - 24px);z-index:10}
+#bar button,#bar select{background:transparent;color:#E9E6DF;border:1px solid #3a3a37;border-radius:999px;padding:5px 10px;font:inherit}
+#bar .tag{color:#FF7A52}
+#state{position:fixed;right:12px;bottom:74px;width:340px;max-height:55vh;overflow:auto;background:#0E0E0D;color:#E9E6DF;border-radius:14px;padding:14px;font:11.5px/1.6 'JetBrains Mono',monospace;white-space:pre-wrap;display:none;z-index:9;max-width:calc(100vw - 24px)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<pre id="state"></pre>
+<div id="bar">
+  <span class="tag">prototype</span>
+  <select id="scenario" aria-label="Scenario"></select>
+  <button data-bar="dayback">− day</button>
+  <button data-bar="dayfwd">+ day</button>
+  <button data-bar="state">state</button>
+</div>
+<script>
+const PATH = /*__PATH_JSON__*/null;
+
+// ---------- dates: plain YYYY-MM-DD, UTC math ----------
+const toMs = s => Date.parse(s + "T00:00:00Z");
+const addDays = (s, n) => new Date(toMs(s) + n * 864e5).toISOString().slice(0, 10);
+const diffDays = (a, b) => Math.round((toMs(a) - toMs(b)) / 864e5);
+const fmt = s => new Date(toMs(s)).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
+const wd = s => new Date(toMs(s)).toLocaleDateString("en-GB", { weekday: "short", timeZone: "UTC" });
+const dnum = s => new Date(toMs(s)).getUTCDate();
+
+const TASKS = [];
+PATH.blocks.forEach((b, bi) => b.tasks.forEach(t => TASKS.push({ ...t, block: bi, order: TASKS.length })));
+const BY_ID = Object.fromEntries(TASKS.map(t => [t.id, t]));
+
+// ---------- in-memory Enrollment ----------
+const START = "2026-11-16";
+let S;
+const fresh = today => ({ today, ts: {}, notes: {}, noteEdits: {}, shifts: [], sel: null, open: new Set(), view: null });
+const st = id => S.ts[id] || { status: "todo", offset: 0 };
+const status = t => st(t.id).status;
+const effDay = t => t.day + (st(t.id).offset || 0);
+const effDue = t => (t.dueDay ?? t.day) + (st(t.id).offset || 0);
+const dateOf = d => addDays(START, d - 1);
+const dayNo = () => diffDays(S.today, START) + 1;
+const lastDay = () => Math.max(...TASKS.map(effDue));
+const blockOfDay = d => { let bi = 0; PATH.blocks.forEach((b, i) => { if (Math.min(...b.tasks.map(t => t.day)) <= d) bi = i; }); return bi; };
+const rhythm = d => (PATH.weekRhythm || [])[((d - 1) % 7 + 7) % 7] || "";
+const weekOf = d => Math.floor((d - 1) / 7) + 1;
+const sortT = a => a.sort((x, y) => effDay(x) - effDay(y) || x.order - y.order);
+
+function buckets() {
+  const D = dayNo();
+  return {
+    D,
+    overdue: sortT(TASKS.filter(t => !t.optional && status(t) === "todo" && effDue(t) < D)),
+    today: sortT(TASKS.filter(t => effDay(t) === D)),
+    ongoing: sortT(TASKS.filter(t => status(t) === "todo" && effDay(t) < D && effDue(t) >= D)),
+    doneToday: TASKS.filter(t => st(t.id).statusDate === S.today && status(t) === "done" && effDay(t) !== D && !(effDay(t) < D && effDue(t) >= D)),
+  };
+}
+function stats() {
+  const req = TASKS.filter(t => !t.optional);
+  const done = req.filter(t => status(t) === "done").length;
+  const bonus = TASKS.filter(t => t.optional && status(t) === "done").length;
+  // Streak (007, amended by 008): a day counts if a Task was done OR a Note was edited that day.
+  // Days with nothing scheduled are skipped over; today only breaks the streak once it has ended.
+  const active = new Set([...TASKS.filter(t => status(t) === "done").map(t => st(t.id).statusDate), ...Object.values(S.noteEdits).flat()]);
+  const sched = new Set(TASKS.map(t => dateOf(effDay(t))));
+  let streak = active.has(S.today) ? 1 : 0, d = addDays(S.today, -1);
+  while (diffDays(d, START) >= 0) { if (active.has(d)) streak++; else if (sched.has(d)) break; d = addDays(d, -1); }
+  const perBlock = PATH.blocks.map((b, bi) => { const r = TASKS.filter(t => t.block === bi && !t.optional); return { n: r.length, done: r.filter(t => status(t) === "done").length }; });
+  return { pct: Math.round(100 * done / req.length), done, req: req.length, bonus, streak, perBlock };
+}
+
+// ---------- actions ----------
+function setStatus(id, s) {
+  const cur = st(id);
+  S.ts[id] = s === "todo" ? { status: "todo", offset: cur.offset || 0 } : { ...cur, status: s, statusDate: S.today };
+}
+function shift(n) {
+  n = Math.max(1, Math.floor(n || 0));
+  const ids = TASKS.filter(t => status(t) === "todo").map(t => t.id);
+  ids.forEach(id => { const c = st(id); S.ts[id] = { ...c, offset: (c.offset || 0) + n }; });
+  S.shifts.push({ appliedOn: S.today, days: n, taskIds: ids });
+}
+function undoShift() { const s = S.shifts.pop(); if (s) s.taskIds.forEach(id => { const c = st(id); S.ts[id] = { ...c, offset: c.offset - s.days }; }); }
+function noteVal(key) {
+  if (!(key in S.notes) && key.startsWith("task:") && BY_ID[key.slice(5)]?.noteTemplate) S.notes[key] = BY_ID[key.slice(5)].noteTemplate;
+  return S.notes[key] ?? "";
+}
+
+// ---------- scenarios ----------
+const hash = s => { let h = 7; for (const c of s) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h % 100; };
+function seedHistory(D) {
+  TASKS.forEach(t => {
+    if (t.day >= D) return;
+    const h = hash(t.id), due = t.dueDay ?? t.day;
+    if (t.optional) { if (h < 45) S.ts[t.id] = { status: "done", statusDate: dateOf(due), offset: 0 }; return; }
+    if (due >= D) { if (h < 25) S.ts[t.id] = { status: "done", statusDate: dateOf(D - 1), offset: 0 }; return; }
+    if (h < 93) S.ts[t.id] = { status: "done", statusDate: dateOf(Math.min(D - 1, due)), offset: 0 };
+    else if (h < 96) S.ts[t.id] = { status: "skipped", statusDate: dateOf(t.day), offset: 0 };
+  });
+  // build days spent on an exercise in progress: the learner adds a line to its Note
+  TASKS.filter(t => t.kind === "exercise" && t.dueDay && t.day < D).forEach(t => {
+    const end = Math.min(D - 1, t.dueDay), dates = [];
+    for (let d = t.day; d <= end; d++) if (/Build/.test(rhythm(d))) dates.push(dateOf(d));
+    if (dates.length) { S.noteEdits["task:" + t.id] = dates; S.notes["task:" + t.id] = dates.map(x => `- ${fmt(x)}: worked on it`).join("\n"); }
+  });
+}
+const SCENARIOS = {
+  before: { label: "before start", make: () => (S = fresh(addDays(START, -3))) },
+  day2: { label: "week 1 · tue", make: () => { S = fresh(dateOf(2)); seedHistory(2); return S; } },
+  day24: { label: "week 4 · wed", make: () => { S = fresh(dateOf(24)); seedHistory(24); return S; } },
+  day78: { label: "week 12 · mon", make: () => { S = fresh(dateOf(78)); seedHistory(78); return S; } },
+  day104: { label: "week 15 · sat (8 tasks)", make: () => { S = fresh(dateOf(104)); seedHistory(104); return S; } },
+  after: { label: "after the end", make: () => { S = fresh(dateOf(124)); seedHistory(119); return S; } },
+};
+
+// ---------- rendering helpers ----------
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+function md(s) {
+  if (!s) return "";
+  return esc(s).split(/\n\s*\n/).map(p => "<p>" + p.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\[([^\]]+)\]\((https?:[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+    .replace(/(^|\n)\s*- /g, "$1· ").replace(/\n/g, "<br>") + "</p>").join("");
+}
+const links = t => (t.links || []).map(l => l.url ? `<a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.title)} ↗</a>` : `<span class="mono">book · ${esc(l.title)}</span>`).join("<br>");
+const kindLabel = t => `<span class="kind mono">${t.kind}${t.optional ? " · optional" : ""}</span>`;
+function when(t, D) {
+  const d = effDay(t), due = effDue(t);
+  if (status(t) === "done") return `<span class="mono status-ok">done ${st(t.id).statusDate === S.today ? "today" : fmt(st(t.id).statusDate).toLowerCase()}</span>`;
+  if (status(t) === "skipped") return `<span class="mono">skipped</span>`;
+  if (due < D) return `<span class="mono status-over">${D - due}d overdue</span>`;
+  if (due > d && D >= d) return `<span class="mono">day ${D - d + 1} of ${due - d + 1} · due ${wd(dateOf(due)).toLowerCase()}</span>`;
+  if (due > d) return `<span class="mono">${due - d + 1} sessions · due ${wd(dateOf(due)).toLowerCase()}</span>`;
+  return "";
+}
+const checkIcon = `<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M2.5 6.2l2.3 2.3 4.7-5"/></svg>`;
+
+function card(t, D) {
+  const s = status(t), open = S.open.has(t.id);
+  return `<article class="card ${S.sel === t.id ? "sel" : ""}">
+    <div class="card-top">${kindLabel(t)}${s === "todo" && effDue(t) < D && !t.optional ? '<span class="dot" aria-hidden="true"></span>' : ""}</div>
+    <div class="card-main">
+      <button class="check ${s === "done" ? "on" : ""}" data-act="toggle" data-id="${t.id}" aria-label="${s === "done" ? "Mark not done" : "Mark done"}: ${esc(t.title)}" aria-pressed="${s === "done"}">${s === "done" ? checkIcon : ""}</button>
+      <button class="title-btn ${s !== "todo" ? "struck" : ""}" data-act="select" data-id="${t.id}" aria-pressed="${S.sel === t.id}">${esc(t.title)}</button>
+    </div>
+    <div class="card-foot">${when(t, D)}
+      ${(t.description || t.links) ? `<button class="linkbtn" data-act="expand" data-id="${t.id}" aria-expanded="${open}">${open ? "less −" : "more +"}</button>` : ""}
+      ${s === "todo" ? `<button class="linkbtn" data-act="skip" data-id="${t.id}">skip</button>` : s === "skipped" ? `<button class="linkbtn" data-act="todo" data-id="${t.id}">unskip</button>` : ""}
+    </div>
+    ${open ? `<div class="desc">${md(t.description)}${links(t) ? `<p>${links(t)}</p>` : ""}</div>` : ""}
+  </article>`;
+}
+function col(title, sub, list, D, extra = "") {
+  return `<section class="col"><h2 class="serif"><span>${title}</span><span class="mono">${list.length}</span></h2>
+    ${sub ? `<p class="sub mono">${sub}</p>` : ""}${extra}
+    ${list.map(t => card(t, D)).join("") || `<p class="empty mono">nothing here</p>`}</section>`;
+}
+function shiftCtl() {
+  const last = S.shifts[S.shifts.length - 1];
+  return `<div class="shift"><label class="mono" for="shiftN" style="margin:0">shift open tasks by</label>
+    <input id="shiftN" type="number" min="1" value="1"><span class="mono">days</span>
+    <button class="pill sm" data-act="shift">Shift</button>
+    ${last ? `<button class="pill sm ghost" data-act="undo">undo +${last.days}d</button>` : ""}</div>`;
+}
+
+// ---------- the page ----------
+function Page() {
+  const { D, overdue, today, ongoing, doneToday } = buckets(); const s = stats();
+  const end = lastDay(), before = D < 1, after = D > end;
+  const b = PATH.blocks[blockOfDay(Math.max(1, Math.min(D, end)))];
+  const wk = Math.max(1, weekOf(Math.max(1, Math.min(D, end))));
+  const V = S.view ?? D, vDate = dateOf(V), noteDate = S.view == null ? S.today : vDate;
+  const sel = S.sel && BY_ID[S.sel];
+
+  const eyebrow = before ? `starts ${fmt(START).toLowerCase()} · in ${1 - D} day${1 - D > 1 ? "s" : ""}`
+    : after ? `path finished · ${fmt(S.today).toLowerCase()}`
+    : `day ${D} · week ${wk} of ${weekOf(end)} · ${fmt(S.today).toLowerCase()}${rhythm(D) ? " · " + rhythm(D).toLowerCase() + " day" : ""}`;
+  const heading = before ? `Almost <em>ready</em>.` : after ? `You <em>finished</em> it.` : `Today<em>.</em>`;
+
+  const hero = `<section class="hero rise">
+    <div><p class="eyebrow mono"><span class="dot pulse" aria-hidden="true"></span>${eyebrow}</p>
+      <h1 class="serif">${heading}</h1>
+      <p class="goal">${before ? esc(PATH.title) + ". Day 1 is below; you can tick things off early." : `<span class="mono" style="display:block;margin-bottom:4px">${esc(b.title)}</span>${esc(b.goal)}`}</p></div>
+    <dl class="stats">
+      <div><dt>required done</dt><dd>${s.pct}%</dd></div>
+      <div><dt>bonus tasks</dt><dd>+${s.bonus}</dd></div>
+      <div><dt>day streak</dt><dd>${s.streak}</dd></div>
+    </dl>
+    <div class="blocks" aria-label="Required Tasks done per Block">${s.perBlock.map((p, i) => `<div style="flex:${p.n}" title="${esc(PATH.blocks[i].title)}: ${p.done}/${p.n}"><span style="width:${100 * p.done / p.n}%"></span></div>`).join("")}</div>
+  </section>`;
+
+  const week = before || after ? "" : `<div class="week" role="group" aria-label="This week">${[...Array(7)].map((_, i) => {
+    const d = (wk - 1) * 7 + i + 1, date = dateOf(d), ts = TASKS.filter(t => effDay(t) === d);
+    const dots = ts.map(t => `<i class="${status(t) === "done" ? "done" : status(t) === "skipped" ? "skip" : effDue(t) < D && !t.optional ? "over" : ""}"></i>`).join("");
+    return `<button class="day ${d === D ? "today" : ""} ${d === S.view ? "viewing" : ""}" data-act="viewday" data-day="${d}" aria-pressed="${d === V}" aria-label="${fmt(date)}, ${ts.length} tasks">
+      <span class="mono">${wd(date).toLowerCase()}</span> <span class="d">${dnum(date)}</span>
+      <span class="lbl mono">${rhythm(d).toLowerCase() || "off"}</span><span class="dots">${dots}</span></button>`;
+  }).join("")}</div>`;
+
+  let main;
+  if (before) main = `<div class="cols" style="grid-template-columns:1fr">${col("Day 1", fmt(START).toLowerCase(), sortT(TASKS.filter(t => effDay(t) === 1)), D)}</div>`;
+  else if (after) main = `<div class="edge"><h2 class="serif">${s.done} of ${s.req}</h2><p class="mono">required tasks · +${s.bonus} bonus · enrollment stays active until you switch</p></div>
+    <div class="cols" style="grid-template-columns:1fr">${col("Still open", "overdue after the last day", overdue, D, overdue.length ? shiftCtl() : "")}</div>`;
+  else {
+    const viewList = S.view == null ? today : sortT(TASKS.filter(t => effDay(t) === V));
+    const middle = S.view == null ? col("Today", rhythm(D).toLowerCase() || "off day", today, D)
+      : col(fmt(vDate), `${rhythm(V).toLowerCase() || "off day"} · ${V < D ? "past" : "ahead"}`, viewList, D, `<button class="pill sm ghost" data-act="viewday" data-day="${D}" style="margin:-4px 0 4px -12px">← back to today</button>`);
+    main = week + `<div class="cols">
+      ${col("Catch up", "overdue, oldest first", overdue, D, overdue.length || S.shifts.length ? shiftCtl() : "")}
+      ${middle}
+      ${col("In progress", "open exercises", ongoing, D)}</div>
+      ${doneToday.length ? `<p class="mono" style="margin-top:14px">also done today · ${doneToday.map(t => esc(t.title)).join(" · ")}</p>` : ""}`;
+  }
+
+  const side = `<aside aria-label="Details and notes">
+    ${sel ? `${kindLabel(sel)}<h3 class="serif" style="margin-top:6px">${esc(sel.title)}</h3><div>${when(sel, D)}</div>
+      <div style="font-size:14px;color:var(--soft)">${md(sel.description)}</div>${links(sel) ? `<p style="font-size:14px">${links(sel)}</p>` : ""}
+      <div class="actions">${status(sel) === "done" ? `<button class="pill sm" data-act="todo" data-id="${sel.id}">Mark not done</button>` : `<button class="pill sm solid" data-act="done" data-id="${sel.id}">${sel.kind === "checkpoint" ? "Yes, I can" : "Done"}</button>`}
+        ${status(sel) === "todo" ? `<button class="pill sm" data-act="skip" data-id="${sel.id}">Skip</button>` : ""}
+        <button class="pill sm ghost" data-act="select" data-id="${sel.id}">Close</button></div>
+      <div class="sec"><label class="mono" for="tn">task note${sel.kind === "exercise" ? " · a line here keeps your streak on build days" : ""}</label>
+      <textarea id="tn" data-note="task:${sel.id}" placeholder="What you did, what you found">${esc(noteVal("task:" + sel.id))}</textarea></div>
+      <div class="sec">`
+      : `<p class="mono" style="margin:0 0 14px">select a task to see details and its note</p><div>`}
+      <label class="mono" for="dn">day note · ${fmt(noteDate).toLowerCase()}</label>
+      <textarea id="dn" style="min-height:${sel ? 110 : 200}px" data-note="day:${noteDate}" placeholder="Findings, links, thoughts">${esc(noteVal("day:" + noteDate))}</textarea></div>
+  </aside>`;
+
+  return `<header><div class="wrap"><nav aria-label="Main">
+      <span class="brand"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 20V9M10 20V4M16 20v-8M22 20H2"/><path d="M16 12V7" stroke="var(--accent)"/></svg>learning<b>.</b>path</span>
+      <div class="navlinks"><a class="navlink on" href="#" aria-current="page">Today</a><a class="navlink" href="#">Path</a><a class="navlink" href="#">Notes</a>
+        <button class="pill sm" data-act="theme" aria-label="Switch between light and dark mode"><span class="dot" aria-hidden="true" style="background:var(--ink)"></span>${document.documentElement.dataset.theme === "dark" || (!document.documentElement.dataset.theme && matchMedia("(prefers-color-scheme: dark)").matches) ? "light" : "dark"}</button></div>
+    </nav></div></header>
+    <main class="wrap">${hero}<div class="board"><div>${main}</div>${side}</div></main>`;
+}
+
+// ---------- wiring ----------
+const params = new URLSearchParams(location.search);
+let scen = SCENARIOS[params.get("scenario")] ? params.get("scenario") : "day24";
+SCENARIOS[scen].make();
+const sel = document.getElementById("scenario");
+sel.innerHTML = Object.entries(SCENARIOS).map(([k, v]) => `<option value="${k}" ${k === scen ? "selected" : ""}>${v.label}</option>`).join("");
+
+function render() {
+  const focus = document.activeElement?.id;
+  document.getElementById("app").innerHTML = Page();
+  if (focus && document.getElementById(focus)) document.getElementById(focus).focus();
+  const q = new URLSearchParams(location.search); q.set("scenario", scen); history.replaceState(null, "", "?" + q);
+  const { D, overdue, today, ongoing } = buckets(); const s = stats();
+  document.getElementById("state").textContent = JSON.stringify({
+    today: S.today, dayNumber: D, rhythmLabel: rhythm(D) || null, viewing: S.view, lastEffectiveDay: lastDay(),
+    derived: { percent: s.pct, requiredDone: `${s.done}/${s.req}`, bonus: s.bonus, streak: s.streak, overdue: overdue.length, todayTasks: today.length, inProgress: ongoing.length },
+    shifts: S.shifts.map(x => ({ appliedOn: x.appliedOn, days: x.days, tasksMoved: x.taskIds.length })),
+    taskStateRecords: Object.keys(S.ts).length,
+    noteEditDates: S.noteEdits,
+  }, null, 2);
+}
+document.addEventListener("click", e => {
+  const a = e.target.closest("[data-act]"), b = e.target.closest("[data-bar]");
+  if (a) {
+    const id = a.dataset.id;
+    switch (a.dataset.act) {
+      case "toggle": setStatus(id, status(BY_ID[id]) === "done" ? "todo" : "done"); break;
+      case "done": setStatus(id, "done"); break;
+      case "todo": setStatus(id, "todo"); break;
+      case "skip": setStatus(id, "skipped"); break;
+      case "expand": S.open.has(id) ? S.open.delete(id) : S.open.add(id); break;
+      case "select": S.sel = S.sel === id ? null : id; break;
+      case "viewday": { const d = +a.dataset.day; S.view = (d === dayNo() || d === S.view) ? null : d; break; }
+      case "shift": shift(+document.getElementById("shiftN").value); break;
+      case "undo": undoShift(); break;
+      case "theme": { const r = document.documentElement, dark = r.dataset.theme === "dark" || (!r.dataset.theme && matchMedia("(prefers-color-scheme: dark)").matches); r.dataset.theme = dark ? "light" : "dark"; break; }
+    }
+    render();
+  }
+  if (b) {
+    const k = b.dataset.bar;
+    if (k === "dayback" || k === "dayfwd") { S.today = addDays(S.today, k === "dayfwd" ? 1 : -1); S.view = null; }
+    if (k === "state") { const p = document.getElementById("state"); p.style.display = p.style.display === "block" ? "none" : "block"; }
+    render();
+  }
+});
+document.addEventListener("input", e => {
+  const k = e.target.dataset?.note; if (!k) return;
+  S.notes[k] = e.target.value;
+  const ed = S.noteEdits[k] || (S.noteEdits[k] = []); if (!ed.includes(S.today)) ed.push(S.today); // a Note edit counts for the streak
+});
+sel.addEventListener("change", () => { scen = sel.value; SCENARIOS[scen].make(); render(); });
+render();
+</script>
+</body>
+</html>

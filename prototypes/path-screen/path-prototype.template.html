@@ -1,0 +1,614 @@
+<!doctype html>
+<!--
+  PROTOTYPE, throwaway. Ticket 010: what should the Path screen look like?
+  Three structurally different variants of the Path screen, switchable via ?variant=A|B|C
+  (or ←/→ and the bottom bar), on the real 17-week data embedded by build.sh. State is in memory only.
+    A Outline   — one collapsible section per Block, Tasks listed by week, resource index in a side column.
+    B Calendar  — the whole run as a weeks × weekdays grid (doubles as the streak calendar), a day pane, index below.
+    C Milestones — six Block tiles as stepping stones, then a per-Block table + checkpoint list, index on a tab.
+  Rules: 007 (effective day = day + offset, optional never overdue, percent = required only, amended streak),
+  006 (tombstones), 009 (URL-less books). Visual direction: 008 (today-view.html).
+  Resource index rule under test: key = normalised URL, or for URL-less books the title with any
+  "(…)" removed, lowercased. Core resources always on top; the rest in the order the toggle picks.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Path Screen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F7F6F3;--surface:#FFFFFF;--ink:#111111;--soft:#3B3B38;--meta:#6A6A66;--rule:#E4E2DC;--accent:#E4572E;--accentText:#B83D1A;--done:#2F6F5E;--doneSoft:rgba(47,111,94,.12);--shadow:rgba(0,0,0,.35)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0C0C0B;--surface:#141413;--ink:#EDEBE6;--soft:#C7C4BC;--meta:#9A9A95;--rule:#262624;--accent:#FF6A3D;--accentText:#FF7A52;--done:#6CC2A8;--doneSoft:rgba(108,194,168,.14);--shadow:rgba(0,0,0,.8)}}
+:root[data-theme="dark"]{--bg:#0C0C0B;--surface:#141413;--ink:#EDEBE6;--soft:#C7C4BC;--meta:#9A9A95;--rule:#262624;--accent:#FF6A3D;--accentText:#FF7A52;--done:#6CC2A8;--doneSoft:rgba(108,194,168,.14);--shadow:rgba(0,0,0,.8)}
+*{box-sizing:border-box}
+html{-webkit-font-smoothing:antialiased}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.6 'Inter Tight',system-ui,sans-serif;padding-bottom:110px;transition:background-color .5s cubic-bezier(.2,.7,.2,1),color .5s}
+a{color:var(--accentText);text-decoration:none}a:hover{text-decoration:underline}
+button{font:inherit;color:inherit;cursor:pointer}
+.mono{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--meta);letter-spacing:0}
+.serif{font-family:'Instrument Serif',Georgia,serif;font-weight:400}
+.wrap{max-width:1240px;margin:0 auto;padding:0 40px}
+@media (max-width:700px){.wrap{padding:0 16px}}
+header{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--rule)}
+nav{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 0}
+.brand{font-family:'JetBrains Mono',monospace;font-size:14px;display:flex;align-items:center;gap:10px}
+.brand b{color:var(--accentText);font-weight:400}
+.navlinks{display:flex;align-items:center;gap:4px 28px;font-size:14px;flex-wrap:wrap}
+.navlink{position:relative;padding:6px 0;color:var(--soft)}
+.navlink.on{color:var(--ink);font-weight:500}
+.navlink.on::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:currentColor}
+.pill{min-height:40px;padding:0 16px;border:1px solid var(--rule);border-radius:999px;background:var(--surface);display:inline-flex;align-items:center;gap:8px;transition:transform .3s cubic-bezier(.2,.7,.2,1),background-color .3s,border-color .3s}
+.pill:hover{transform:translateY(-1px);border-color:var(--meta)}
+.pill.solid,.pill.on{background:var(--ink);color:var(--bg);border-color:var(--ink);font-weight:500}
+.pill.sm{min-height:32px;padding:0 12px;font-size:13px}
+.pill.ghost{background:transparent;border-color:transparent;color:var(--meta)}
+.pill.ghost:hover{color:var(--ink);border-color:var(--rule)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.hero{padding:56px 0 28px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:24px 48px;align-items:end}
+.hero.compact{padding:36px 0 20px}
+@media (max-width:900px){.hero{grid-template-columns:1fr;padding-top:32px}}
+.eyebrow{display:flex;align-items:center;gap:10px;margin:0 0 18px}
+.dot{width:7px;height:7px;border-radius:999px;background:var(--accent);flex:none;display:inline-block}
+@media (prefers-reduced-motion:no-preference){.pulse{animation:pulse 2.4s ease-in-out infinite}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.rise{animation:rise .7s cubic-bezier(.2,.7,.2,1) both}@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}}
+h1{margin:0;font-size:clamp(44px,6.5vw,88px);line-height:1;letter-spacing:-.025em}
+h1 em{color:var(--accentText)}
+.goal{margin:18px 0 0;max-width:640px;font-size:19px;font-weight:300;color:var(--soft)}
+.stats{display:grid;grid-template-columns:repeat(4,auto);gap:12px 36px;margin:0}
+@media (max-width:560px){.stats{grid-template-columns:repeat(2,auto)}}
+.stats div{display:flex;flex-direction:column-reverse;gap:2px}
+.stats dt{font-size:13px;color:var(--meta)} .stats dd{margin:0;font-family:'Instrument Serif',Georgia,serif;font-size:40px;line-height:1}
+.bar{height:4px;border-radius:2px;background:var(--rule);position:relative;overflow:hidden}
+.bar span{position:absolute;inset:0 auto 0 0;background:var(--accent)}
+.bar.donebar span{background:var(--done)}
+.check{flex:none;width:22px;height:22px;border-radius:999px;border:1.5px solid var(--meta);background:transparent;display:grid;place-items:center;padding:0}
+.check:hover{border-color:var(--ink)}
+.check.on{background:var(--done);border-color:var(--done);color:var(--bg)}
+.check.skip{border-style:dashed;opacity:.6}
+.struck{text-decoration:line-through;color:var(--meta)}
+.status-over{color:var(--accentText)} .status-ok{color:var(--done)}
+.muted{opacity:.62}
+.linkbtn{background:none;border:0;padding:2px 0;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--meta)}
+.linkbtn:hover{color:var(--ink)}
+.desc{font-size:14px;color:var(--soft)} .desc p{margin:.4em 0}
+code{font-family:'JetBrains Mono',monospace;font-size:.85em;background:var(--surface);border:1px solid var(--rule);padding:0 4px;border-radius:4px}
+.panel{background:var(--surface);border:1px solid var(--rule);border-radius:14px;padding:20px}
+.panel h2,.panel h3{margin:0;line-height:1.05}
+.panel h2{font-size:30px} .panel h3{font-size:24px}
+.sec{padding-top:16px;margin-top:16px;border-top:1px solid var(--rule)}
+.shiftmark{display:flex;gap:8px;align-items:center;margin:8px 0;padding:6px 10px;border:1px dashed var(--accent);border-radius:999px;width:fit-content;max-width:100%}
+.title-btn{all:unset;cursor:pointer;min-width:0}
+.title-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+.tag{font-family:'JetBrains Mono',monospace;font-size:11px;border:1px solid var(--rule);border-radius:999px;padding:0 7px;color:var(--meta);white-space:nowrap}
+.tag.core{border-color:var(--ink);color:var(--ink)}
+/* resource index (shared) */
+.res-head{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px}
+.res-list{list-style:none;margin:0;padding:0}
+.res-list li{padding:10px 0;border-top:1px solid var(--rule)}
+.res-list li:first-child{border-top:0}
+.res-title{font-size:15px;line-height:1.35}
+.res-uses{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.use{font-family:'JetBrains Mono',monospace;font-size:11px;border:1px solid var(--rule);background:var(--bg);border-radius:999px;padding:0 7px;color:var(--meta)}
+.use.done{border-color:var(--done);color:var(--done)}
+.use:hover{border-color:var(--ink);color:var(--ink)}
+.grp{margin:16px 0 2px}
+.res-search{width:100%;margin-top:12px;min-height:38px;font:inherit;font-size:14px;background:var(--bg);color:var(--ink);border:1px solid var(--rule);border-radius:999px;padding:0 14px}
+.res-search:focus{outline:none;border-color:var(--ink)}
+/* ---------- A: outline ---------- */
+.a-layout{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:24px;align-items:start;padding-bottom:40px}
+@media (max-width:980px){.a-layout{grid-template-columns:minmax(0,1fr)}}
+.a-layout aside{position:sticky;top:84px;max-height:calc(100vh - 100px);overflow:auto}
+@media (max-width:980px){.a-layout aside{position:static;max-height:none}}
+.blk{background:var(--surface);border:1px solid var(--rule);border-radius:14px;margin-bottom:12px;overflow:hidden}
+.blk.current{border-color:var(--ink)}
+.blk-head{all:unset;box-sizing:border-box;cursor:pointer;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 16px;align-items:center;width:100%;padding:16px 20px}
+.blk-head:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.blk-num{font-family:'Instrument Serif',Georgia,serif;font-size:38px;line-height:1;color:var(--meta)}
+.blk.current .blk-num{color:var(--accentText)}
+.blk-title{font-size:18px;font-weight:500;line-height:1.3}
+.blk-meta{grid-column:2/-1;display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center}
+.blk-meta .bar{width:120px}
+.blk-body{padding:0 20px 16px}
+.wk{margin-top:14px}
+.wk-h{display:flex;gap:10px;align-items:baseline;padding-bottom:4px;border-bottom:1px solid var(--rule)}
+.wk-h .serif{font-size:20px}
+.row{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:4px 12px;align-items:start;padding:9px 0;border-bottom:1px solid var(--rule)}
+.row:last-child{border-bottom:0}
+.row .t{font-size:15px;line-height:1.4}
+.row .sub{display:flex;flex-wrap:wrap;gap:2px 10px}
+.row .right{text-align:right}
+.row .desc{grid-column:2/-1}
+.row.today-row{background:linear-gradient(90deg,var(--doneSoft),transparent 60%)}
+@media (max-width:560px){.row{grid-template-columns:22px minmax(0,1fr)}.row .right{grid-column:2;text-align:left}}
+/* ---------- B: calendar ---------- */
+.b-layout{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:24px;align-items:start}
+@media (max-width:1000px){.b-layout{grid-template-columns:minmax(0,1fr)}}
+.b-layout aside{position:sticky;top:84px}
+@media (max-width:1000px){.b-layout aside{position:static}}
+.cal{display:grid;grid-template-columns:110px repeat(7,minmax(0,1fr));gap:4px}
+@media (max-width:640px){.cal{grid-template-columns:34px repeat(7,minmax(0,1fr));gap:3px}.cal .hd{font-size:10px;padding:0 1px 4px;overflow:hidden;text-overflow:ellipsis}}
+.cal .hd{padding:0 4px 4px}
+.gut{display:flex;flex-direction:column;justify-content:center;padding-right:6px;min-width:0}
+.gut .blab{font-size:12px;line-height:1.2;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:640px){.gut .blab{display:none}}
+.gut.bstart{border-top:2px solid var(--ink);padding-top:4px}
+.cell{all:unset;box-sizing:border-box;min-width:0;overflow:hidden;cursor:pointer;background:var(--surface);border:1px solid var(--rule);border-radius:9px;min-height:54px;padding:5px 6px;display:flex;flex-direction:column;gap:3px;position:relative;transition:transform .3s cubic-bezier(.2,.7,.2,1),border-color .3s}
+.cell:hover{transform:translateY(-1px);border-color:var(--meta)}
+.cell:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.cell.empty{background:transparent;border-style:dashed;opacity:.55}
+.cell.future{background:transparent}
+.cell.active{background:var(--doneSoft)}
+.cell.today{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.cell.sel{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.cell .n{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--meta);display:flex;justify-content:space-between;gap:4px}
+.cell .dots{display:flex;flex-wrap:wrap;gap:3px}
+.cell .dots i{width:7px;height:7px;border-radius:999px;border:1px solid var(--meta);display:block}
+.cell .dots i.done{background:var(--done);border-color:var(--done)}
+.cell .dots i.over{background:var(--accent);border-color:var(--accent)}
+.cell .dots i.skip{border-style:dashed;opacity:.6}
+.cell .dots i.opt{border-radius:2px}
+.cell .moved{position:absolute;right:5px;bottom:4px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--accentText)}
+@media (max-width:640px){.cell{min-height:42px;padding:3px}.cell .n span+span{display:none}.cell .moved{font-size:9px;right:2px;bottom:1px}.cell .dots i{width:5px;height:5px}}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin:14px 0 0}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:9px;height:9px;border-radius:999px;border:1px solid var(--meta);display:inline-block}
+.bchips{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-top:20px}
+@media (max-width:760px){.bchips{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.bchip{background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:10px 12px}
+.bchip.current{border-color:var(--ink)}
+.dcard{display:grid;grid-template-columns:22px minmax(0,1fr);gap:4px 10px;padding:10px 0;border-top:1px solid var(--rule)}
+.res-cols{columns:2 360px;column-gap:32px}
+.res-cols li{break-inside:avoid}
+/* ---------- C: milestones ---------- */
+.tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:20px}
+@media (max-width:1000px){.tiles{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:560px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.tile{all:unset;box-sizing:border-box;cursor:pointer;background:var(--surface);border:1px solid var(--rule);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px;position:relative;transition:transform .4s cubic-bezier(.2,.7,.2,1),box-shadow .4s,border-color .3s}
+.tile:hover{transform:translateY(-3px);box-shadow:0 18px 40px -26px var(--shadow)}
+.tile:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tile.sel{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.tile.complete{background:var(--doneSoft)}
+.tile .top{display:flex;justify-content:space-between;align-items:center}
+.tile .num{font-family:'Instrument Serif',Georgia,serif;font-size:32px;line-height:1}
+.tile .tt{font-size:14px;line-height:1.3;font-weight:500}
+.ring{transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:4}
+.ring .bg{stroke:var(--rule)} .ring .fg{stroke:var(--accent);stroke-linecap:round}
+.tile.complete .ring .fg{stroke:var(--done)}
+.tabs{display:flex;gap:4px 24px;border-bottom:1px solid var(--rule);margin-bottom:20px;flex-wrap:wrap}
+.tabs button{all:unset;cursor:pointer;padding:10px 0;font-size:15px;color:var(--soft);position:relative}
+.tabs button.on{color:var(--ink);font-weight:500}
+.tabs button.on::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--ink)}
+.tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.c-layout{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:24px;align-items:start}
+@media (max-width:980px){.c-layout{grid-template-columns:minmax(0,1fr)}}
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{text-align:left;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:400;color:var(--meta);padding:6px 8px;border-bottom:1px solid var(--rule)}
+.tbl td{padding:9px 8px;border-bottom:1px solid var(--rule);vertical-align:top}
+.tbl tr.wkstart td{border-top:1px solid var(--ink)}
+.tbl .w{white-space:nowrap}
+@media (max-width:640px){.tbl .hide-sm{display:none}}
+.cp{display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px;padding:10px 0;border-top:1px solid var(--rule)}
+.cp:first-of-type{border-top:0}
+#toast{position:fixed;left:50%;bottom:76px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 16px;border-radius:999px;font:12px 'JetBrains Mono',monospace;z-index:11;display:none;max-width:calc(100vw - 32px)}
+/* prototype bar (not part of the design) */
+#bar{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);background:#0E0E0D;color:#E9E6DF;border-radius:999px;padding:6px 8px 6px 16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;box-shadow:0 10px 30px rgba(0,0,0,.35);font:12px 'JetBrains Mono',monospace;max-width:calc(100vw - 24px);z-index:10}
+#bar button,#bar select{background:transparent;color:#E9E6DF;border:1px solid #3a3a37;border-radius:999px;padding:5px 10px;font:inherit}
+#bar .ptag{color:#FF7A52}
+#bar #vlabel{min-width:150px;text-align:center}
+#state{position:fixed;right:12px;bottom:74px;width:360px;max-height:60vh;overflow:auto;background:#0E0E0D;color:#E9E6DF;border-radius:14px;padding:14px;font:11.5px/1.6 'JetBrains Mono',monospace;white-space:pre-wrap;display:none;z-index:9;max-width:calc(100vw - 24px)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast" role="status"></div>
+<pre id="state"></pre>
+<div id="bar">
+  <span class="ptag">prototype</span>
+  <button data-bar="prev" aria-label="Previous variant">←</button>
+  <span id="vlabel"></span>
+  <button data-bar="next" aria-label="Next variant">→</button>
+  <select id="scenario" aria-label="Scenario"></select>
+  <button data-bar="state">state</button>
+</div>
+<script>
+const PATH = /*__PATH_JSON__*/null;
+
+// ---------- dates: plain YYYY-MM-DD, UTC math ----------
+const toMs = s => Date.parse(s + "T00:00:00Z");
+const addDays = (s, n) => new Date(toMs(s) + n * 864e5).toISOString().slice(0, 10);
+const diffDays = (a, b) => Math.round((toMs(a) - toMs(b)) / 864e5);
+const fmt = s => new Date(toMs(s)).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }).toLowerCase();
+const fmtShort = s => new Date(toMs(s)).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" }).toLowerCase();
+const wd = s => new Date(toMs(s)).toLocaleDateString("en-GB", { weekday: "short", timeZone: "UTC" }).toLowerCase();
+const dnum = s => new Date(toMs(s)).getUTCDate();
+
+const TASKS = [];
+PATH.blocks.forEach((b, bi) => b.tasks.forEach(t => TASKS.push({ ...t, block: bi, order: TASKS.length })));
+const BY_ID = Object.fromEntries(TASKS.map(t => [t.id, t]));
+const splitTitle = s => { const m = s.match(/^(Weeks? [\d–-]+):\s*(.*)$/); return m ? { weeks: m[1], name: m[2] } : { weeks: "", name: s }; };
+
+// ---------- in-memory Enrollment ----------
+const START = "2026-11-16";
+let S;
+const fresh = today => ({ today, ts: {}, notes: {}, noteEdits: {}, shifts: [], tomb: [], filter: "all", resOrder: "first", resF: "all", resQ: "", openBlocks: null, open: new Set(), selDay: null, selBlock: null, tab: "tasks", kindF: "all" });
+const st = id => S.ts[id] || { status: "todo", offset: 0 };
+const status = t => st(t.id).status;
+const off = t => st(t.id).offset || 0;
+const effDay = t => t.day + off(t);
+const effDue = t => (t.dueDay ?? t.day) + off(t);
+const dateOf = d => addDays(START, d - 1);
+const dayNo = () => diffDays(S.today, START) + 1;
+const lastDay = () => Math.max(...TASKS.map(effDue));
+const rhythm = d => (PATH.weekRhythm || [])[((d - 1) % 7 + 7) % 7] || "";
+const weekOf = d => Math.floor((d - 1) / 7) + 1;
+const sortT = a => a.sort((x, y) => effDay(x) - effDay(y) || x.order - y.order);
+const isOver = (t, D) => !t.optional && status(t) === "todo" && effDue(t) < D;
+const isPastOpt = (t, D) => t.optional && status(t) === "todo" && effDue(t) < D;
+const blockTasks = bi => TASKS.filter(t => t.block === bi);
+const blockRange = bi => { const ts = blockTasks(bi); return { from: Math.min(...ts.map(effDay)), to: Math.max(...ts.map(effDue)) }; };
+function currentBlock(D) {
+  const end = lastDay(), d = Math.max(1, Math.min(D, end));
+  let bi = 0; PATH.blocks.forEach((_, i) => { if (blockRange(i).from <= d) bi = i; }); return bi;
+}
+
+function stats() {
+  const D = dayNo(), req = TASKS.filter(t => !t.optional);
+  const done = req.filter(t => status(t) === "done").length;
+  const bonus = TASKS.filter(t => t.optional && status(t) === "done").length;
+  const active = new Set([...TASKS.filter(t => status(t) === "done").map(t => st(t.id).statusDate), ...Object.values(S.noteEdits).flat()]);
+  const sched = new Set(TASKS.map(t => dateOf(effDay(t))));
+  let streak = active.has(S.today) ? 1 : 0, d = addDays(S.today, -1);
+  while (diffDays(d, START) >= 0) { if (active.has(d)) streak++; else if (sched.has(d)) break; d = addDays(d, -1); }
+  const perBlock = PATH.blocks.map((b, bi) => {
+    const ts = blockTasks(bi), r = ts.filter(t => !t.optional), cps = ts.filter(t => t.kind === "checkpoint");
+    const n = r.length, dn = r.filter(t => status(t) === "done").length;
+    return { n, done: dn, cpN: cps.length, cpDone: cps.filter(t => status(t) === "done").length, over: ts.filter(t => isOver(t, D)).length, complete: dn === n, bonus: ts.filter(t => t.optional && status(t) === "done").length };
+  });
+  const cps = TASKS.filter(t => t.kind === "checkpoint");
+  return { D, pct: Math.round(100 * done / req.length), done, req: req.length, bonus, streak, active, perBlock,
+    cpN: cps.length, cpDone: cps.filter(t => status(t) === "done").length, blocksDone: perBlock.filter(p => p.complete).length,
+    overdue: TASKS.filter(t => isOver(t, D)).length };
+}
+
+// ---------- derived resource index ----------
+const normUrl = u => u.trim().replace(/^https?:\/\//, "").replace(/\/+$/, "").toLowerCase();
+const normTitle = s => s.replace(/\([^)]*\)/g, "").replace(/[^a-z0-9]+/gi, " ").trim().toLowerCase();
+function resIndex() {
+  const m = new Map();
+  const add = (l, task, coreIdx) => {
+    const key = l.url ? "url:" + normUrl(l.url) : "book:" + normTitle(l.title);
+    let e = m.get(key);
+    if (!e) m.set(key, e = { key, title: l.title, url: l.url, note: null, core: false, coreIdx: null, uses: [], titles: new Set() });
+    e.titles.add(l.title);
+    if (task) e.uses.push(task); else { e.core = true; e.coreIdx = coreIdx; e.title = l.title; e.note = l.note || null; }
+  };
+  (PATH.resources || []).forEach((r, i) => add(r, null, i));
+  TASKS.forEach(t => (t.links || []).forEach(l => add(l, t)));
+  const all = [...m.values()];
+  all.forEach(e => { sortT(e.uses); e.first = e.uses.length ? effDay(e.uses[0]) : Infinity; e.block = e.uses.length ? e.uses[0].block : null; });
+  return all;
+}
+function resourceIndex({ cols = false, compact = false } = {}) {
+  const all = resIndex(), D = dayNo();
+  // filter: chip (all / core / books / still to use) + free-text search over titles, aliases, notes, URLs and the Tasks that use it
+  const q = S.resQ.trim().toLowerCase();
+  const pass = e => ({ all: true, core: e.core, books: !e.url, todo: e.uses.some(t => status(t) === "todo") })[S.resF]
+    && (!q || [...e.titles, e.note || "", e.url || "", ...e.uses.map(t => t.title)].some(s => s.toLowerCase().includes(q)));
+  const shown = all.filter(pass);
+  const item = e => `<li>
+    <div class="res-title">${e.url ? `<a href="${esc(e.url)}" target="_blank" rel="noopener">${esc(e.title)} ↗</a>` : `${esc(e.title)} <span class="tag">book</span>`}
+      ${e.core ? `<span class="tag core">core</span>` : ""}</div>
+    ${e.note ? `<div class="mono">${esc(e.note)}</div>` : ""}
+    ${e.titles.size > 1 ? `<div class="mono">also listed as “${esc([...e.titles].filter(x => x !== e.title).join("”, “"))}”</div>` : ""}
+    ${e.uses.length ? `<div class="res-uses">${e.uses.map(t => `<button class="use ${status(t) === "done" ? "done" : ""}" data-act="jump" data-id="${t.id}" title="${esc(t.title)}">d${effDay(t)}${status(t) === "done" ? " ✓" : ""}</button>`).join("")}</div>`
+      : `<div class="mono">not linked from a task · whole-path reference</div>`}
+  </li>`;
+  // the order applies to every entry; core resources are marked by their tag, not pinned
+  const list = g => `<ul class="res-list ${cols ? "res-cols" : ""}">${g.map(item).join("")}</ul>`;
+  const byFirst = (a, b) => a.first - b.first || (a.coreIdx ?? 99) - (b.coreIdx ?? 99) || a.title.localeCompare(b.title);
+  let body;
+  if (!shown.length) body = `<p class="mono" style="margin-top:14px">no resources match${q ? ` “${esc(S.resQ)}”` : ""}</p>`;
+  else if (S.resOrder === "block") {
+    const whole = shown.filter(e => e.block == null);
+    body = (whole.length ? `<p class="grp mono">whole path · not linked from a task</p>${list(whole)}` : "")
+      + PATH.blocks.map((b, bi) => { const g = shown.filter(e => e.block === bi).sort(byFirst); return g.length ? `<p class="grp mono">${esc(splitTitle(b.title).weeks.toLowerCase())} · ${esc(splitTitle(b.title).name)} · ${g.length}</p>${list(g)}` : ""; }).join("");
+  } else body = list(shown.sort(S.resOrder === "az" ? (a, b) => a.title.localeCompare(b.title) : byFirst));
+  const sid = "resq-" + variant;
+  return `<div class="res-head"><h${compact ? 3 : 2} class="serif">Resources</h${compact ? 3 : 2}><span class="mono">${shown.length === all.length ? `${all.length} entries` : `${shown.length} of ${all.length}`} · from ${(PATH.resources || []).length} core + ${TASKS.reduce((n, t) => n + (t.links || []).length, 0)} task links</span></div>
+    <input id="${sid}" class="res-search" type="search" data-resq placeholder="Search resources and the tasks that use them" value="${esc(S.resQ)}" aria-label="Search resources">
+    <div class="chips" style="margin:10px 0 4px" role="group" aria-label="Filter resources">
+      <span class="mono">show</span>${[["all", "all"], ["core", "core"], ["books", "books"], ["todo", "still to use"]].map(([k, l]) => `<button class="pill sm ${S.resF === k ? "on" : ""}" data-act="resfilter" data-k="${k}" aria-pressed="${S.resF === k}">${l}</button>`).join("")}</div>
+    <div class="chips" style="margin:6px 0 4px" role="group" aria-label="Order resources">
+      <span class="mono">order</span>${[["first", "first use"], ["block", "by block"], ["az", "a–z"]].map(([k, l]) => `<button class="pill sm ${S.resOrder === k ? "on" : ""}" data-act="resorder" data-k="${k}" aria-pressed="${S.resOrder === k}">${l}</button>`).join("")}</div>
+    ${body}`;
+}
+
+// ---------- actions ----------
+function setStatus(id, s) { const cur = st(id); S.ts[id] = s === "todo" ? { status: "todo", offset: cur.offset || 0 } : { ...cur, status: s, statusDate: S.today }; }
+function shift(n) {
+  const ids = TASKS.filter(t => status(t) === "todo").map(t => t.id);
+  ids.forEach(id => { const c = st(id); S.ts[id] = { ...c, offset: (c.offset || 0) + n }; });
+  S.shifts.push({ appliedOn: S.today, days: n, taskIds: ids });
+}
+let toastT;
+function toast(msg) { const el = document.getElementById("toast"); el.textContent = msg; el.style.display = "block"; clearTimeout(toastT); toastT = setTimeout(() => el.style.display = "none", 2600); }
+
+// ---------- scenarios ----------
+const hash = s => { let h = 7; for (const c of s) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h % 100; };
+function seedHistory(D) {
+  TASKS.forEach(t => {
+    if (t.day >= D) return;
+    const h = hash(t.id), due = t.dueDay ?? t.day;
+    if (t.optional) { if (h < 45) S.ts[t.id] = { status: "done", statusDate: dateOf(due), offset: 0 }; return; }
+    if (due >= D) { if (h < 25) S.ts[t.id] = { status: "done", statusDate: dateOf(D - 1), offset: 0 }; return; }
+    if (h < 90) S.ts[t.id] = { status: "done", statusDate: dateOf(Math.min(D - 1, due)), offset: 0 };
+    else if (h < 94) S.ts[t.id] = { status: "skipped", statusDate: dateOf(t.day), offset: 0 };
+  });
+  TASKS.filter(t => t.kind === "exercise" && t.dueDay && t.day < D).forEach(t => {
+    const dates = []; for (let d = t.day; d <= Math.min(D - 1, t.dueDay); d++) if (/Build/.test(rhythm(d))) dates.push(dateOf(d));
+    if (dates.length) S.noteEdits["task:" + t.id] = dates;
+  });
+}
+const at = (D, extra) => () => { S = fresh(dateOf(D)); seedHistory(D); extra && extra(); };
+const SCENARIOS = {
+  before: { label: "before start", make: () => { S = fresh(addDays(START, -3)); } },
+  day24: { label: "week 4 · wed", make: at(24) },
+  shifted: { label: "week 4 · after +2 shift, 2 removed", make: () => {
+    S = fresh(dateOf(22)); seedHistory(22); shift(2); S.today = dateOf(24);
+    // tombstones from a reload (006): removed from the file but they carried progress or a Note
+    S.tomb = [
+      { id: "tokenizer-deep-dive", title: "Read: Tokenizer internals (removed in v2026-11-20)", kind: "material", day: 4, status: "done", statusDate: dateOf(4), note: "BPE merges, byte fallback; see Karpathy's minbpe." },
+      { id: "kv-cache-sketch", title: "Sketch the KV-cache memory maths", kind: "exercise", day: 17, status: "todo", note: "70B, 8k ctx, fp16 → ~40 GB per batch of 16? check." },
+    ];
+  } },
+  day78: { label: "week 12 · mon", make: at(78) },
+  after: { label: "after the end", make: () => { S = fresh(dateOf(124)); seedHistory(119); } },
+};
+
+// ---------- shared helpers ----------
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+function md(s) {
+  if (!s) return "";
+  return esc(s).split(/\n\s*\n/).map(p => "<p>" + p.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\[([^\]]+)\]\((https?:[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+    .replace(/(^|\n)\s*- /g, "$1· ").replace(/\n/g, "<br>") + "</p>").join("");
+}
+const links = t => (t.links || []).map(l => l.url ? `<a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.title)} ↗</a>` : `<span class="mono">book · ${esc(l.title)}</span>`).join("<br>");
+const checkIcon = `<svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M2.5 6.2l2.3 2.3 4.7-5"/></svg>`;
+const check = t => { const s = status(t); return `<button class="check ${s === "done" ? "on" : s === "skipped" ? "skip" : ""}" data-act="toggle" data-id="${t.id}" aria-label="${s === "done" ? "Mark not done" : "Mark done"}: ${esc(t.title)}" aria-pressed="${s === "done"}">${s === "done" ? checkIcon : ""}</button>`; };
+const kindLabel = t => `${t.kind}${t.optional ? " · optional" : ""}`;
+// effective day; the authored day is shown only when a shift moved the Task
+const whenDay = (t, showOff = true) => `${wd(dateOf(effDay(t)))} ${fmtShort(dateOf(effDay(t)))} · d${effDay(t)}${showOff && off(t) ? ` <span class="status-over">+${off(t)}d</span>` : ""}`;
+function statusText(t, D) {
+  const s = status(t), due = effDue(t), d = effDay(t);
+  if (s === "done") return `<span class="mono status-ok">done ${st(t.id).statusDate === S.today ? "today" : fmtShort(st(t.id).statusDate)}</span>`;
+  if (s === "skipped") return `<span class="mono">skipped</span>`;
+  if (isOver(t, D)) return `<span class="mono status-over">${D - due}d overdue</span>`;
+  if (isPastOpt(t, D)) return `<span class="mono">optional · past · still tickable</span>`;
+  if (D >= d && D <= due) return `<span class="mono">${due > d ? `open · due ${wd(dateOf(due))}` : "today"}</span>`;
+  if (due > d) return `<span class="mono">${due - d + 1} sessions</span>`;
+  return `<span class="mono">upcoming</span>`;
+}
+const shiftMark = sh => `<div class="shiftmark mono"><span class="dot" aria-hidden="true"></span>shifted +${sh.days}d on ${fmt(sh.appliedOn)} · ${sh.taskIds.length} open tasks moved</div>`;
+const tombList = () => S.tomb.map(x => `<div class="row muted"><span class="check ${x.status === "done" ? "on" : ""}" aria-hidden="true">${x.status === "done" ? checkIcon : ""}</span>
+  <div><div class="t">${esc(x.title)}</div><div class="sub"><span class="mono">${x.kind} · was d${x.day} · ${x.status}</span><span class="mono">note: “${esc(x.note.slice(0, 50))}${x.note.length > 50 ? "…" : ""}”</span></div></div>
+  <div class="right"><button class="linkbtn" data-act="mock" data-msg="would open this Note on the Notes screen">open note →</button></div></div>`).join("");
+const eyebrow = (D, end) => D < 1 ? `starts ${fmt(START)} · in ${1 - D} day${1 - D > 1 ? "s" : ""}` : D > end ? `path finished · ${fmt(S.today)}` : `day ${D} of ${end} · week ${weekOf(D)} of ${weekOf(end)} · ${fmt(S.today)}`;
+const heroStats = s => `<dl class="stats">
+  <div><dt>required done</dt><dd>${s.pct}%</dd></div>
+  <div><dt>checkpoints passed</dt><dd>${s.cpDone}/${s.cpN}</dd></div>
+  <div><dt>blocks complete</dt><dd>${s.blocksDone}/${PATH.blocks.length}</dd></div>
+  <div><dt>day streak</dt><dd>${s.streak}</dd></div></dl>`;
+const ring = (p, size = 44) => { const r = size / 2 - 3, c = 2 * Math.PI * r; return `<svg class="ring" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-hidden="true"><circle class="bg" cx="${size / 2}" cy="${size / 2}" r="${r}"/><circle class="fg" cx="${size / 2}" cy="${size / 2}" r="${r}" stroke-dasharray="${c * p} ${c}"/></svg>`; };
+const filterChips = () => `<div class="chips" role="group" aria-label="Filter tasks">${[["all", "all"], ["open", "open"], ["overdue", "overdue"], ["optional", "optional"], ["done", "done"]].map(([k, l]) => `<button class="pill sm ${S.filter === k ? "on" : ""}" data-act="filter" data-k="${k}" aria-pressed="${S.filter === k}">${l}</button>`).join("")}</div>`;
+const passFilter = (t, D) => ({ all: true, open: status(t) === "todo", overdue: isOver(t, D), optional: !!t.optional, done: status(t) === "done" })[S.filter];
+
+// ================= Variant A: Outline =================
+function VariantA() {
+  const s = stats(), D = s.D, end = lastDay(), cb = currentBlock(D);
+  if (!S.openBlocks) S.openBlocks = new Set([cb]);
+  const blocks = PATH.blocks.map((b, bi) => {
+    const p = s.perBlock[bi], r = blockRange(bi), open = S.openBlocks.has(bi), cur = bi === cb && D >= 1 && D <= end;
+    const state = p.complete ? "complete" : cur ? "current" : r.to < D ? "behind" : "upcoming";
+    let body = "";
+    if (open) {
+      const ts = sortT(blockTasks(bi)).filter(t => passFilter(t, D));
+      const weeks = [...new Set(ts.map(t => weekOf(effDay(t))))];
+      body = `<div class="blk-body"><p class="desc" style="margin:0">${esc(b.goal)}</p>
+        ${weeks.map(w => {
+          const wts = ts.filter(t => weekOf(effDay(t)) === w), from = dateOf((w - 1) * 7 + 1);
+          const marks = S.shifts.filter(sh => weekOf(diffDays(sh.appliedOn, START) + 1) === w).map(shiftMark).join("");
+          return `<div class="wk"><div class="wk-h"><span class="serif">Week ${w}</span><span class="mono">${fmtShort(from)} – ${fmtShort(addDays(from, 6))}</span>${w === weekOf(D) ? `<span class="tag core">this week</span>` : ""}${(() => { const o = [...new Set(wts.filter(off).map(off))]; return o.length ? `<span class="mono status-over">moved ${o.map(x => "+" + x + "d").join(" / ")} by a shift</span>` : ""; })()}</div>${marks}
+            ${wts.map(t => { const o = S.open.has(t.id); return `<div class="row ${D >= effDay(t) && D <= effDue(t) ? "today-row" : ""}">${check(t)}
+              <div><button class="title-btn t ${status(t) !== "todo" ? "struck" : ""} ${isPastOpt(t, D) ? "muted" : ""}" data-act="expand" data-id="${t.id}" aria-expanded="${o}">${esc(t.title)}</button>
+                <div class="sub"><span class="mono">${kindLabel(t)}</span>${statusText(t, D)}</div></div>
+              <div class="right mono">${whenDay(t, false)}</div>
+              ${o ? `<div class="desc">${off(t) ? `<p class="mono">authored day ${t.day} · moved +${off(t)}d by a shift</p>` : ""}${md(t.description)}${links(t) ? `<p>${links(t)}</p>` : ""}<p><button class="linkbtn" data-act="mock" data-msg="would open Today with ${fmt(dateOf(effDay(t)))} selected">open day ${effDay(t)} in Today →</button></p></div>` : ""}</div>`; }).join("")}</div>`;
+        }).join("") || `<p class="mono" style="margin-top:12px">no tasks match “${S.filter}”</p>`}</div>`;
+    }
+    return `<section class="blk ${cur ? "current" : ""}">
+      <button class="blk-head" data-act="toggleblock" data-bi="${bi}" aria-expanded="${open}">
+        <span class="blk-num">${String(bi + 1).padStart(2, "0")}</span>
+        <span class="blk-title">${esc(b.title)}</span>
+        <span class="mono">${open ? "−" : "+"}</span>
+        <span class="blk-meta"><span class="bar ${p.complete ? "donebar" : ""}"><span style="width:${100 * p.done / p.n}%"></span></span>
+          <span class="mono">${p.done}/${p.n} required</span><span class="mono">checkpoints ${p.cpDone}/${p.cpN}</span>${p.bonus ? `<span class="mono">+${p.bonus} bonus</span>` : ""}
+          ${p.over ? `<span class="mono status-over">${p.over} overdue</span>` : ""}<span class="mono">${fmtShort(dateOf(r.from))} – ${fmtShort(dateOf(r.to))}</span>
+          <span class="tag ${state === "current" ? "core" : ""}">${state}</span></span>
+      </button>${body}</section>`;
+  }).join("");
+  return `<section class="hero rise"><div><p class="eyebrow mono"><span class="dot pulse" aria-hidden="true"></span>${eyebrow(D, end)}</p>
+      <h1 class="serif">The <em>path</em>.</h1><p class="goal">${esc(PATH.title)}</p></div>${heroStats(s)}</section>
+    <div class="a-layout"><div>
+      <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">${filterChips()}
+        <div class="chips"><button class="pill sm ghost" data-act="allblocks" data-k="open">expand all</button><button class="pill sm ghost" data-act="allblocks" data-k="close">collapse</button></div></div>
+      ${blocks}
+      ${S.tomb.length ? `<section class="blk"><div class="blk-body" style="padding-top:16px"><div class="wk-h"><span class="serif">Removed from the path</span><span class="mono">${S.tomb.length} · kept because they have progress or a note</span></div>${tombList()}</div></section>` : ""}
+    </div><aside class="panel" aria-label="Resource index">${resourceIndex({ compact: true })}</aside></div>`;
+}
+
+// ================= Variant B: Calendar =================
+function VariantB() {
+  const s = stats(), D = s.D, end = lastDay(), W = weekOf(end), cb = currentBlock(D);
+  const sd = S.selDay ?? Math.max(1, Math.min(D, end));
+  const startWeek = bi => weekOf(blockRange(bi).from);
+  let grid = `<div></div>${[...Array(7)].map((_, i) => `<div class="hd mono">${wd(dateOf(i + 1))}<br>${(PATH.weekRhythm[i] || "off").toLowerCase()}</div>`).join("")}`;
+  for (let w = 1; w <= W; w++) {
+    const bi = PATH.blocks.findIndex((_, i) => startWeek(i) === w);
+    grid += `<div class="gut ${bi >= 0 ? "bstart" : ""}"><span class="mono">w${w}</span>${bi >= 0 ? `<span class="blab">${esc(splitTitle(PATH.blocks[bi].title).name)}</span>` : ""}</div>`;
+    for (let k = 1; k <= 7; k++) {
+      const d = (w - 1) * 7 + k, date = dateOf(d), ts = sortT(TASKS.filter(t => effDay(t) === d));
+      const moved = ts.filter(t => off(t)).length;
+      const dots = ts.map(t => `<i class="${status(t) === "done" ? "done" : status(t) === "skipped" ? "skip" : isOver(t, D) ? "over" : ""} ${t.optional ? "opt" : ""}"></i>`).join("");
+      grid += `<button class="cell ${!ts.length ? "empty" : ""} ${d > D ? "future" : ""} ${s.active.has(date) ? "active" : ""} ${d === D ? "today" : ""} ${d === sd ? "sel" : ""}" data-act="selday" data-day="${d}" aria-pressed="${d === sd}" aria-label="${fmt(date)}, day ${d}, ${ts.length} tasks">
+        <span class="n"><span>${dnum(date) === 1 || d === 1 ? fmtShort(date) : dnum(date)}</span>${d === D ? "<span>today</span>" : ""}</span><span class="dots">${dots}</span>${moved ? `<span class="moved">+${Math.max(...ts.map(off))}</span>` : ""}</button>`;
+    }
+  }
+  const dts = sortT(TASKS.filter(t => effDay(t) === sd)), sdate = dateOf(sd);
+  const spanning = sortT(TASKS.filter(t => effDay(t) < sd && effDue(t) >= sd && status(t) === "todo"));
+  const pane = `<aside class="panel" aria-label="Selected day">
+    <p class="mono" style="margin:0">${sd === D ? "today · " : sd < D ? "past · " : "ahead · "}day ${sd} · ${(rhythm(sd) || "off").toLowerCase()} day</p>
+    <h3 class="serif" style="margin-top:4px;font-size:32px">${fmt(sdate)}</h3>
+    <p class="mono" style="margin:4px 0 0">${esc(PATH.blocks[currentBlock(sd)].title)}</p>
+    ${dts.map(t => `<div class="dcard">${check(t)}<div><div class="${status(t) !== "todo" ? "struck" : ""} ${isPastOpt(t, D) ? "muted" : ""}" style="font-size:15px;line-height:1.4">${esc(t.title)}</div>
+      <div class="chips"><span class="mono">${kindLabel(t)}</span>${statusText(t, D)}${off(t) ? `<span class="mono">authored d${t.day} · +${off(t)}d</span>` : ""}</div></div></div>`).join("") || `<p class="mono" style="margin-top:14px">nothing scheduled</p>`}
+    ${spanning.length ? `<p class="mono" style="margin:14px 0 0">also open this day · ${spanning.map(t => esc(t.title)).join(" · ")}</p>` : ""}
+    <div class="actions chips" style="margin-top:16px"><button class="pill sm solid" data-act="mock" data-msg="would open Today with ${fmt(sdate)} selected">Open in Today →</button></div>
+    ${S.shifts.length ? `<div class="sec">${S.shifts.map(shiftMark).join("")}</div>` : ""}
+  </aside>`;
+  const chips = PATH.blocks.map((b, bi) => { const p = s.perBlock[bi]; return `<div class="bchip ${bi === cb ? "current" : ""}"><div class="mono">${esc(splitTitle(b.title).weeks.toLowerCase())}</div>
+    <div style="font-size:14px;line-height:1.3;margin:2px 0 8px">${esc(splitTitle(b.title).name)}</div><div class="bar ${p.complete ? "donebar" : ""}"><span style="width:${100 * p.done / p.n}%"></span></div>
+    <div class="mono" style="margin-top:6px">${p.done}/${p.n} · cp ${p.cpDone}/${p.cpN}${p.over ? ` · <span class="status-over">${p.over} over</span>` : ""}</div></div>`; }).join("");
+  return `<section class="hero compact rise"><div><p class="eyebrow mono"><span class="dot pulse" aria-hidden="true"></span>${eyebrow(D, end)}</p>
+      <h1 class="serif">${W} <em>weeks</em>.</h1></div>${heroStats(s)}</section>
+    <div class="b-layout"><div class="panel" style="padding:16px">
+      <div class="cal" role="group" aria-label="Every day of the path">${grid}</div>
+      <div class="legend mono"><span><i style="background:var(--done);border-color:var(--done)"></i>done</span><span><i style="background:var(--accent);border-color:var(--accent)"></i>overdue</span><span><i></i>open</span><span><i style="border-style:dashed"></i>skipped</span><span><i style="border-radius:2px"></i>optional</span><span><i style="background:var(--doneSoft);border-radius:3px;border-color:var(--rule)"></i>active day (streak)</span><span><b class="status-over" style="font-weight:400">+2</b> moved by a shift</span></div>
+      ${S.tomb.length ? `<p class="mono" style="margin:12px 0 0">${S.tomb.length} removed tasks are not on the calendar · they keep their notes · <button class="linkbtn" data-act="mock" data-msg="would open Notes → Removed tasks">see notes →</button></p>` : ""}
+    </div>${pane}</div>
+    <div class="bchips">${chips}</div>
+    <section class="panel" style="margin-top:24px">${resourceIndex({ cols: true })}</section>`;
+}
+
+// ================= Variant C: Milestones =================
+function VariantC() {
+  const s = stats(), D = s.D, end = lastDay(), cb = currentBlock(D);
+  const sb = S.selBlock ?? cb, b = PATH.blocks[sb], p = s.perBlock[sb], r = blockRange(sb);
+  const tiles = PATH.blocks.map((x, bi) => { const q = s.perBlock[bi], rr = blockRange(bi), cur = bi === cb && D >= 1 && D <= end;
+    return `<button class="tile ${bi === sb ? "sel" : ""} ${q.complete ? "complete" : ""}" data-act="selblock" data-bi="${bi}" aria-pressed="${bi === sb}">
+      <span class="top"><span class="num serif">${String(bi + 1).padStart(2, "0")}</span>${ring(q.done / q.n)}</span>
+      <span class="tt">${esc(splitTitle(x.title).name)}</span>
+      <span class="mono">${esc(splitTitle(x.title).weeks.toLowerCase())} · ${fmtShort(dateOf(rr.from))}</span>
+      <span class="mono">${q.complete ? `<span class="status-ok">complete</span>` : cur ? `<span class="status-over">you are here</span>` : `${q.done}/${q.n}`} · cp ${q.cpDone}/${q.cpN}</span>
+      ${q.over ? `<span class="mono status-over">${q.over} overdue</span>` : ""}</button>`; }).join("");
+  const kinds = ["all", "material", "exercise", "reflection", "optional"];
+  const rows = sortT(blockTasks(sb)).filter(t => t.kind !== "checkpoint").filter(t => S.kindF === "all" ? true : S.kindF === "optional" ? t.optional : t.kind === S.kindF);
+  let lastW = null;
+  const table = `<table class="tbl"><thead><tr><th></th><th>when</th><th>task</th><th class="hide-sm">kind</th><th>status</th></tr></thead><tbody>
+    ${rows.map(t => { const w = weekOf(effDay(t)), ws = w !== lastW; lastW = w; return `<tr class="${ws ? "wkstart" : ""}"><td>${check(t)}</td><td class="w mono">${ws ? `<b style="font-weight:400;color:var(--ink)">week ${w}</b><br>` : ""}${whenDay(t)}</td>
+      <td><button class="title-btn ${status(t) !== "todo" ? "struck" : ""} ${isPastOpt(t, D) ? "muted" : ""}" data-act="expand" data-id="${t.id}" aria-expanded="${S.open.has(t.id)}">${esc(t.title)}</button>
+        ${S.open.has(t.id) ? `<div class="desc">${md(t.description)}${links(t) ? `<p>${links(t)}</p>` : ""}<p><button class="linkbtn" data-act="mock" data-msg="would open Today with ${fmt(dateOf(effDay(t)))} selected">open day ${effDay(t)} in Today →</button></p></div>` : ""}</td>
+      <td class="hide-sm mono">${kindLabel(t)}</td><td>${statusText(t, D)}</td></tr>`; }).join("")}</tbody></table>`;
+  const cps = sortT(blockTasks(sb).filter(t => t.kind === "checkpoint"));
+  const cpPanel = `<aside class="panel"><h3 class="serif">Can you…</h3><p class="mono" style="margin:4px 0 10px">checkpoints ${p.cpDone}/${p.cpN} · ticking one means “yes, I can”</p>
+    ${cps.map(t => `<div class="cp">${check(t)}<div><div class="${status(t) === "done" ? "struck" : ""}" style="font-size:15px;line-height:1.4">${esc(t.title)}</div><div class="chips"><span class="mono">${whenDay(t)}</span>${statusText(t, D)}</div></div></div>`).join("") || `<p class="mono">no checkpoints in this block</p>`}
+    ${S.shifts.length ? `<div class="sec">${S.shifts.map(shiftMark).join("")}</div>` : ""}</aside>`;
+  const tabs = `<div class="tabs" role="tablist">${[["tasks", "Tasks"], ["resources", "Resources"], ...(S.tomb.length ? [["removed", `Removed (${S.tomb.length})`]] : [])].map(([k, l]) => `<button role="tab" class="${S.tab === k ? "on" : ""}" aria-selected="${S.tab === k}" data-act="tab" data-k="${k}">${l}</button>`).join("")}</div>`;
+  let content;
+  if (S.tab === "resources") content = `<section class="panel">${resourceIndex({ cols: true })}</section>`;
+  else if (S.tab === "removed") content = `<section class="panel"><h3 class="serif">Removed from the path</h3><p class="mono">kept because they have progress or a note · restored if their id comes back</p>${tombList()}</section>`;
+  else content = `<div class="c-layout"><section class="panel">
+      <p class="mono" style="margin:0">block ${sb + 1} of ${PATH.blocks.length} · ${fmtShort(dateOf(r.from))} – ${fmtShort(dateOf(r.to))} · ${p.done}/${p.n} required${p.bonus ? ` · +${p.bonus} bonus` : ""}</p>
+      <h2 class="serif" style="margin-top:4px">${esc(splitTitle(b.title).name)}</h2>
+      <p class="goal" style="font-size:17px;margin-top:8px">${esc(b.goal)}</p>
+      <div class="chips" style="margin:14px 0 6px" role="group" aria-label="Filter by kind">${kinds.map(k => `<button class="pill sm ${S.kindF === k ? "on" : ""}" data-act="kind" data-k="${k}" aria-pressed="${S.kindF === k}">${k}</button>`).join("")}</div>
+      ${table}</section>${cpPanel}</div>`;
+  const cbName = D < 1 ? "Ready" : D > end ? "Done" : `Block <em>${cb + 1}</em> of ${PATH.blocks.length}`;
+  return `<section class="hero rise"><div><p class="eyebrow mono"><span class="dot pulse" aria-hidden="true"></span>${eyebrow(D, end)}</p>
+      <h1 class="serif">${cbName}.</h1><p class="goal">${D < 1 ? esc(PATH.title) : D > end ? `${s.done} of ${s.req} required tasks · +${s.bonus} bonus` : esc(PATH.blocks[cb].goal)}</p></div>${heroStats(s)}</section>
+    <div class="tiles" role="group" aria-label="Blocks">${tiles}</div>${tabs}${content}<div style="height:40px"></div>`;
+}
+
+// ---------- page shell + wiring ----------
+const VARIANTS = { A: ["Outline", VariantA], B: ["Calendar", VariantB], C: ["Milestones", VariantC] };
+const KEYS = Object.keys(VARIANTS);
+const params = new URLSearchParams(location.search);
+let variant = VARIANTS[params.get("variant")] ? params.get("variant") : "A";
+let scen = SCENARIOS[params.get("scenario")] ? params.get("scenario") : "shifted";
+SCENARIOS[scen].make();
+const selEl = document.getElementById("scenario");
+selEl.innerHTML = Object.entries(SCENARIOS).map(([k, v]) => `<option value="${k}" ${k === scen ? "selected" : ""}>${v.label}</option>`).join("");
+const isDark = () => { const r = document.documentElement; return r.dataset.theme === "dark" || (!r.dataset.theme && matchMedia("(prefers-color-scheme: dark)").matches); };
+
+function render() {
+  const ae = document.activeElement, focus = ae?.closest("[data-act]") ? null : ae?.id, caret = ae?.selectionStart;
+  const asideScroll = document.querySelector(".a-layout aside")?.scrollTop;
+  document.getElementById("app").innerHTML = `<header><div class="wrap"><nav aria-label="Main">
+      <span class="brand"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 20V9M10 20V4M16 20v-8M22 20H2"/><path d="M16 12V7" stroke="var(--accent)"/></svg>learning<b>.</b>path</span>
+      <div class="navlinks"><a class="navlink" href="../today-view/today-view.html">Today</a><a class="navlink on" href="#" aria-current="page">Path</a><a class="navlink" href="#">Notes</a>
+        <button class="pill sm" data-act="theme" aria-label="Switch between light and dark mode"><span class="dot" aria-hidden="true" style="background:var(--ink)"></span>${isDark() ? "light" : "dark"}</button></div>
+    </nav></div></header><main class="wrap">${VARIANTS[variant][1]()}</main>`;
+  const fe = focus && document.getElementById(focus);
+  if (fe) { fe.focus(); if (caret != null && fe.setSelectionRange) fe.setSelectionRange(caret, caret); }
+  const asideEl = document.querySelector(".a-layout aside"); if (asideEl && asideScroll) asideEl.scrollTop = asideScroll;
+  document.getElementById("vlabel").textContent = `${variant} (${VARIANTS[variant][0]})`;
+  const q = new URLSearchParams(location.search); q.set("variant", variant); q.set("scenario", scen); history.replaceState(null, "", "?" + q);
+  const s = stats(), idx = resIndex();
+  document.getElementById("state").textContent = JSON.stringify({
+    variant, scenario: scen, today: S.today, dayNumber: s.D, lastEffectiveDay: lastDay(), currentBlock: currentBlock(s.D) + 1,
+    derived: { percent: s.pct, requiredDone: `${s.done}/${s.req}`, bonus: s.bonus, checkpoints: `${s.cpDone}/${s.cpN}`, blocksComplete: s.blocksDone, streak: s.streak, overdue: s.overdue },
+    perBlock: s.perBlock.map((p, i) => `${i + 1}: ${p.done}/${p.n} req · cp ${p.cpDone}/${p.cpN} · over ${p.over} · d${blockRange(i).from}–${blockRange(i).to}`),
+    shifts: S.shifts.map(x => ({ appliedOn: x.appliedOn, days: x.days, tasksMoved: x.taskIds.length })),
+    tombstones: S.tomb.map(x => x.id),
+    resourceIndex: { entries: idx.length, core: idx.filter(e => e.core).length, coreAlsoInTasks: idx.filter(e => e.core && e.uses.length).length,
+      booksWithoutUrl: idx.filter(e => !e.url).length, mergedUnderDifferentTitles: idx.filter(e => e.titles.size > 1).map(e => [...e.titles]) },
+  }, null, 2);
+}
+function cycle(n) { variant = KEYS[(KEYS.indexOf(variant) + n + KEYS.length) % KEYS.length]; render(); }
+document.addEventListener("click", e => {
+  const a = e.target.closest("[data-act]"), b = e.target.closest("[data-bar]");
+  if (a) {
+    const id = a.dataset.id, k = a.dataset.k;
+    switch (a.dataset.act) {
+      case "toggle": setStatus(id, status(BY_ID[id]) === "done" ? "todo" : "done"); break;
+      case "expand": S.open.has(id) ? S.open.delete(id) : S.open.add(id); break;
+      case "toggleblock": { const bi = +a.dataset.bi; S.openBlocks.has(bi) ? S.openBlocks.delete(bi) : S.openBlocks.add(bi); break; }
+      case "allblocks": S.openBlocks = new Set(k === "open" ? PATH.blocks.map((_, i) => i) : []); break;
+      case "filter": S.filter = k; break;
+      case "resorder": S.resOrder = k; break;
+      case "resfilter": S.resF = k; break;
+      case "selday": S.selDay = +a.dataset.day; break;
+      case "selblock": S.selBlock = +a.dataset.bi; S.tab = "tasks"; break;
+      case "tab": S.tab = k; break;
+      case "kind": S.kindF = k; break;
+      case "jump": { // a resource-use chip: show that Task in the current variant
+        const t = BY_ID[id];
+        if (variant === "A") { S.openBlocks.add(t.block); S.open.add(id); S.filter = "all"; }
+        if (variant === "B") S.selDay = effDay(t);
+        if (variant === "C") { S.selBlock = t.block; S.tab = "tasks"; S.kindF = "all"; S.open.add(id); }
+        toast(`day ${effDay(t)} · ${t.title}`); break;
+      }
+      case "mock": toast(a.dataset.msg); break;
+      case "theme": document.documentElement.dataset.theme = isDark() ? "light" : "dark"; break;
+    }
+    render();
+  }
+  if (b) {
+    if (b.dataset.bar === "prev") cycle(-1);
+    if (b.dataset.bar === "next") cycle(1);
+    if (b.dataset.bar === "state") { const p = document.getElementById("state"); p.style.display = p.style.display === "block" ? "none" : "block"; }
+  }
+});
+document.addEventListener("keydown", e => {
+  if (e.target.closest("input,textarea,select,[contenteditable]")) return;
+  if (e.key === "ArrowLeft") cycle(-1); if (e.key === "ArrowRight") cycle(1);
+});
+document.addEventListener("input", e => { if (e.target.matches("[data-resq]")) { S.resQ = e.target.value; render(); } });
+selEl.addEventListener("change", () => { scen = selEl.value; SCENARIOS[scen].make(); render(); });
+render();
+</script>
+</body>
+</html>

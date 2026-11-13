@@ -1,0 +1,914 @@
+# Converted from eval-infra-17-weeks.md (ticket: Convert the 17-week plan into the schema).
+# Day numbering: path week w, weekday k (Monday = 1) -> day = 7*(w-1) + k.
+schemaVersion: 1
+id: eval-infra-17-weeks
+version: "2026-11-09"
+title: "17-Week Plan: Eval Infrastructure Engineer"
+startWeekday: monday
+description: |
+  In 17 weeks you close the gaps between 8 years of backend work and the Software Engineer,
+  Evaluation Infrastructure role: LLM inference, the platform layer, GPU scheduling and eval
+  methodology. You finish with a capstone project that covers almost every bullet in the posting.
+
+  **Assumptions:** about 6 hours a week (1 hour each weekday, 1 hour on Saturday), a budget of
+  roughly $50–100 for rented GPU time, and Python as the working language. Optional Tasks can be
+  skipped if you fall behind.
+
+  **Weekly rhythm**
+
+  - **Study days (Monday and Wednesday, 1 hour each):** read and watch the week's material and take notes.
+  - **Build days (Tuesday, Thursday and Friday, 1 hour each):** build the hands-on exercise in small
+    steps. Commit at the end of every session so you can pick up where you left off.
+  - **Review day (Saturday, 1 hour):** tick off the checkpoints, write 3 sentences on what you
+    learned, and choose next week's tasks. These notes become interview material.
+
+  **Apply in parallel.** Don't wait until week 17. Start applying around week 8; early interviews
+  are practice, and your capstone will be far enough along to talk about.
+
+  The links were compiled from memory, not checked one by one; if one is broken, search the title.
+weekRhythm: ["Study", "Build", "Study", "Build", "Build", "Review", ""]
+resources:
+  - title: "AI Engineering (Chip Huyen, 2025)"
+    note: "Evaluation and inference chapters."
+  - title: "Designing Data-Intensive Applications (Martin Kleppmann)"
+  - title: "How to Scale Your Model (Google DeepMind)"
+    url: "https://jax-ml.github.io/scaling-book/"
+    note: "Free online."
+  - title: "Andrej Karpathy's YouTube lectures"
+    url: "https://www.youtube.com/@AndrejKarpathy"
+  - title: "Stanford CS336, Language Modeling from Scratch"
+    url: "https://stanford-cs336.github.io/"
+    note: "Free lectures."
+
+blocks:
+  # ------------------------------------------------------------------ Weeks 1–3
+  - title: "Weeks 1–3: How LLMs work and run"
+    goal: "Be able to explain, with numbers, why LLM inference is expensive and where the time goes."
+    description: |
+      This is the vocabulary every later week depends on.
+
+      - **Weeks 1–2: The model**
+      - **Week 3: Inference arithmetic**
+    tasks:
+      # Week 1
+      - id: intro-to-llms
+        day: 1
+        kind: material
+        title: "Watch: Intro to Large Language Models (Karpathy, 1 hr)"
+        description: "For the big picture."
+        links:
+          - title: "Intro to Large Language Models"
+            url: "https://www.youtube.com/watch?v=zjkBMFhNj_g"
+      - id: build-gpt-from-scratch
+        day: 2
+        dueDay: 12
+        kind: exercise
+        title: "Watch and code along: Let's build GPT from scratch (Karpathy, 2 hrs)"
+        description: "Type the code yourself; don't just watch. Spread over the build days of weeks 1–2."
+        links:
+          - title: "Let's build GPT: from scratch, in code, spelled out"
+            url: "https://www.youtube.com/watch?v=kCc8FmEb1nY"
+      - id: 3blue1brown-transformers
+        day: 3
+        kind: material
+        optional: true
+        title: "Visual intuition: 3Blue1Brown neural networks series"
+        description: "The chapters on transformers and attention."
+        links:
+          - title: "3Blue1Brown: Neural networks"
+            url: "https://www.3blue1brown.com/topics/neural-networks"
+      - id: learnings-week-1
+        day: 6
+        kind: reflection
+        title: "Week 1 review"
+        description: "Write 3 sentences on what you learned this week, and choose next week's tasks."
+      # Week 2
+      - id: attention-is-all-you-need
+        day: 8
+        kind: material
+        title: "Skim: Attention Is All You Need"
+        description: "Focus on the architecture figure and section 3."
+        links:
+          - title: "Attention Is All You Need"
+            url: "https://arxiv.org/abs/1706.03762"
+      - id: learnings-week-2
+        day: 13
+        kind: reflection
+        title: "Week 2 review"
+        description: "Write 3 sentences on what you learned this week, and choose next week's tasks."
+      # Week 3
+      - id: transformer-inference-arithmetic
+        day: 15
+        kind: material
+        title: "Read: Transformer Inference Arithmetic (kipply)"
+        description: "The single most useful post for this role."
+        links:
+          - title: "Transformer Inference Arithmetic"
+            url: "https://kipp.ly/transformer-inference-arithmetic/"
+      - id: scaling-book-inference
+        day: 15
+        dueDay: 17
+        kind: material
+        title: "Read: \"All About Transformer Inference\" (How to Scale Your Model)"
+        links:
+          - title: "How to Scale Your Model"
+            url: "https://jax-ml.github.io/scaling-book/"
+      - id: kv-cache-exercise
+        day: 16
+        dueDay: 19
+        kind: exercise
+        title: "Add a KV cache to your GPT and measure the generation speedup"
+        description: "Use the GPT you built in weeks 1–2."
+      - id: go-brrr
+        day: 17
+        kind: material
+        title: "Read: Making Deep Learning Go Brrrr From First Principles (Horace He)"
+        description: "Compute-bound vs. memory-bound vs. overhead-bound."
+        links:
+          - title: "Making Deep Learning Go Brrrr"
+            url: "https://horace.io/brrr_intro.html"
+      - id: inference-optimization-overview
+        day: 17
+        kind: material
+        title: "Read: Large Transformer Model Inference Optimization (Lilian Weng)"
+        description: "An overview of the techniques you'll meet in weeks 7–9."
+        links:
+          - title: "Large Transformer Model Inference Optimization"
+            url: "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/"
+      - id: reproduce-gpt2
+        day: 17
+        dueDay: 20
+        kind: material
+        optional: true
+        title: "Watch: Let's reproduce GPT-2 (124M) (Karpathy, 4 hrs)"
+        description: "Watch the sections on mixed precision, FlashAttention and torch.compile."
+        links:
+          - title: "Let's reproduce GPT-2 (124M)"
+            url: "https://www.youtube.com/watch?v=l8pRSuU81PU"
+      - id: kv-cache-size-on-paper
+        day: 18
+        kind: exercise
+        title: "On paper: KV cache size per token for Llama 3 8B"
+        description: |
+          32 layers, 8 KV heads, head dimension 128, fp16.
+          Check: it should come to 128 KB per token, about 1 GB for one 8K-token sequence.
+      - id: prefill-vs-decode
+        day: 20
+        kind: reflection
+        title: "Why is prefill compute-bound and decode memory-bandwidth-bound?"
+        description: "Explain it in 5 sentences."
+      - id: draw-transformer-block
+        day: 20
+        kind: checkpoint
+        title: "I can draw a transformer block and explain attention without notes."
+      - id: estimate-kv-cache
+        day: 20
+        kind: checkpoint
+        title: "I can estimate KV cache memory and max batch size for a model on a given GPU."
+      - id: batching-decode-cost
+        day: 20
+        kind: checkpoint
+        title: "I can explain why batching makes decode cheaper per token."
+      - id: learnings-week-3
+        day: 20
+        kind: reflection
+        title: "Week 3 review"
+        description: "Write 3 sentences on what you learned this week, and choose next week's tasks."
+
+  # ------------------------------------------------------------------ Weeks 4–6
+  - title: "Weeks 4–6: The platform layer"
+    goal: "Move from \"I write services\" to \"I run long batch workloads on a cluster and they survive failures.\""
+    description: |
+      This is your biggest gap coming from backend services.
+
+      - **Weeks 4–5: Async Python and Kubernetes**
+      - **Week 6: Ray, durable workflows, failure handling**
+    tasks:
+      # Week 4
+      - id: asyncio-book
+        day: 22
+        kind: material
+        title: "Read: Python Concurrency with asyncio (Matthew Fowler)"
+        description: "The chapters on tasks, semaphores, queues and error handling. Skip what you know."
+        links:
+          - title: "Python Concurrency with asyncio (Matthew Fowler)"
+      - id: async-job-runner
+        day: 23
+        dueDay: 26
+        kind: exercise
+        title: "Write an async Python job runner"
+        description: |
+          A queue of 10,000 fake "eval tasks" (each sleeps randomly and fails 5% of the time), with a
+          concurrency limit, retries with exponential backoff and jitter, and results saved so a
+          restart skips finished work.
+      - id: beazley-concurrency-talk
+        day: 24
+        kind: material
+        title: "Watch: \"Python Concurrency From the Ground Up: LIVE!\" (David Beazley, PyCon)"
+        description: "Search the title on YouTube. For intuition on event loops."
+      - id: learnings-week-4
+        day: 27
+        kind: reflection
+        title: "Week 4 review"
+        description: "Write 3 sentences on what you learned this week, and choose next week's tasks."
+      # Week 5
+      - id: kubernetes-up-and-running
+        day: 29
+        kind: material
+        title: "Read: Kubernetes: Up and Running (3rd ed.)"
+        description: "The chapters on Pods, Deployments and Jobs, plus resource requests and limits."
+        links:
+          - title: "Kubernetes: Up and Running, 3rd ed."
+      - id: kind-cluster-runner
+        day: 30
+        dueDay: 40
+        kind: exercise
+        title: "Deploy the runner as worker pods on a local kind cluster"
+        description: |
+          Run a local cluster with kind and deploy the runner as several worker pods pulling from
+          Redis. Kill pods at random and confirm nothing is lost or done twice.
+        links:
+          - title: "kind"
+            url: "https://kind.sigs.k8s.io/"
+      - id: kubernetes-jobs-and-gpus
+        day: 31
+        kind: material
+        title: "Read: the Kubernetes docs on Jobs and scheduling GPUs"
+        links:
+          - title: "Kubernetes Jobs"
+            url: "https://kubernetes.io/docs/concepts/workloads/controllers/job/"
+          - title: "Scheduling GPUs"
+            url: "https://kubernetes.io/docs/tasks/manage-gpus/scheduling-gpus/"
+      - id: ddia-distributed-trouble
+        day: 31
+        kind: material
+        title: "Read: DDIA, \"The Trouble with Distributed Systems\""
+        links:
+          - title: "Designing Data-Intensive Applications (Kleppmann)"
+      - id: learnings-week-5
+        day: 34
+        kind: reflection
+        title: "Week 5 review"
+        description: "Write 3 sentences on what you learned this week, and choose next week's tasks."
+      # Week 6
+      - id: ray-core
+        day: 36
+        kind: material
+        title: "Read: the Ray paper and the Ray Core walkthrough"
+        description: "Tasks, actors, object store, fault tolerance."
+        links:
+          - title: "Ray paper"
+            url: "https://arxiv.org/abs/1712.05889"
+          - title: "Ray Core walkthrough"
+            url: "https://docs.ray.io/en/latest/ray-core/walkthrough.html"
+      - id: temporal-durable-execution
+        day: 36
+        kind: material
+        title: "Read: Temporal's core concepts on durable execution"
+        description: "Eval runs are hours-long workflows that must resume after a crash."
+        links:
+          - title: "Temporal docs"
+            url: "https://docs.temporal.io/"
+      - id: sre-book-overload
+        day: 38
+        kind: material
+        title: "Read: Google SRE book, overload and pipeline chapters"
+        description: "\"Handling Overload\", \"Addressing Cascading Failures\" and \"Data Processing Pipelines\"."
+        links:
+          - title: "Google SRE book"
+            url: "https://sre.google/sre-book/table-of-contents/"
+      - id: ddia-stream-processing
+        day: 38
+        kind: material
+        title: "Read: DDIA, \"Stream Processing\""
+        description: "Message brokers and exactly-once semantics."
+        links:
+          - title: "Designing Data-Intensive Applications (Kleppmann)"
+      - id: ray-port
+        day: 39
+        dueDay: 40
+        kind: exercise
+        optional: true
+        title: "Port the job runner to Ray tasks and compare"
+        description: "Compare lines of code, failure behavior, and how it scales."
+      - id: runner-survives-killed-workers
+        day: 41
+        kind: checkpoint
+        title: "My runner survives killed workers with no lost or duplicated results."
+      - id: jobs-vs-ray-vs-workflows
+        day: 41
+        kind: checkpoint
+        title: "I can explain when to use Kubernetes Jobs vs. Ray vs. a workflow engine."
+      - id: backpressure-and-retries
+        day: 41
+        kind: checkpoint
+        title: "I can explain backpressure and why unbounded retries cause cascading failures."
+      - id: learnings-week-6
+        day: 41
+        kind: reflection
+        title: "Week 6 review"
+        description: "Write 3 sentences on what you learned this week, and choose next week's tasks."
+
+  # ------------------------------------------------------------------ Weeks 7–9
+  - title: "Weeks 7–9: Hands-on LLM inference"
+    goal: "Serve a real model, load-test it with your own client, and explain every number on the throughput–latency curve."
+    description: |
+      This covers the "Experience in LLM inference" bullet.
+
+      - **Week 7: How serving engines work**
+      - **Week 8: Advanced serving and profiling**
+
+      For the exercises, rent one GPU on RunPod, Modal or Lambda; an L4, A10 or A100 is plenty.
+    tasks:
+      # Week 7
+      - id: pagedattention-paper
+        day: 43
+        kind: material
+        title: "Read: Efficient Memory Management for LLM Serving with PagedAttention (vLLM)"
+        links:
+          - title: "PagedAttention"
+            url: "https://arxiv.org/abs/2309.06180"
+      - id: orca-paper
+        day: 43
+        kind: material
+        title: "Read: Orca: continuous batching (OSDI '22)"
+        links:
+          - title: "Orca"
+            url: "https://www.usenix.org/conference/osdi22/presentation/yu"
+      - id: vllm-docs
+        day: 44
+        kind: material
+        title: "Read: the vLLM docs"
+        description: "The OpenAI-compatible server, prefix caching and benchmarking. Prep for serving your first model."
+        links:
+          - title: "vLLM docs"
+            url: "https://docs.vllm.ai/"
+      - id: vllm-load-generator
+        day: 44
+        dueDay: 47
+        kind: exercise
+        title: "Serve a 7–8B model with vLLM and write your own async load generator"
+        description: "The generator reports time to first token, inter-token latency and total tokens/sec."
+      - id: flashattention-paper
+        day: 45
+        kind: material
+        title: "Read: FlashAttention, sections 1–3"
+        links:
+          - title: "FlashAttention"
+            url: "https://arxiv.org/abs/2205.14135"
+      - id: ai-engineering-inference
+        day: 45
+        kind: material
+        title: "Read: AI Engineering (Chip Huyen), \"Inference Optimization\""
+        links:
+          - title: "AI Engineering (Chip Huyen)"
+      - id: cs336-inference-lecture
+        day: 45
+        dueDay: 47
+        kind: material
+        title: "Watch: the inference lecture from Stanford CS336"
+        description: "Lecture videos are linked from the course site."
+        links:
+          - title: "Stanford CS336"
+            url: "https://stanford-cs336.github.io/"
+      - id: learnings-week-7
+        day: 48
+        kind: reflection
+        title: "Week 7 review"
+        description: "Write 3 sentences on what you learned this week, and choose next week's tasks."
+      # Week 8
+      - id: start-applying
+        day: 50
+        kind: exercise
+        title: "Start applying"
+        description: "Don't wait until week 17. Early interviews are practice, and your capstone will be far enough along to talk about."
+      - id: speculative-decoding-paper
+        day: 50
+        kind: material
+        optional: true
+        title: "Read: Speculative decoding (Leviathan et al.)"
+        description: "Week 8 papers: pick at least two of the four."
+        links:
+          - title: "Speculative decoding"
+            url: "https://arxiv.org/abs/2211.17192"
+      - id: sglang-paper
+        day: 50
+        kind: material
+        optional: true
+        title: "Read: SGLang and RadixAttention"
+        description: |
+          Why prefix sharing matters for evals, where many prompts share a long few-shot prefix.
+          Week 8 papers: pick at least two of the four.
+        links:
+          - title: "SGLang"
+            url: "https://arxiv.org/abs/2312.07104"
+      - id: concurrency-sweep
+        day: 51
+        dueDay: 54
+        kind: exercise
+        title: "Sweep concurrency 1–256 and plot throughput against p50/p99 latency"
+        description: "Find the knee in the curve and explain it in terms of KV cache memory."
+      - id: sarathi-serve-paper
+        day: 52
+        kind: material
+        optional: true
+        title: "Read: Sarathi-Serve"
+        description: |
+          Chunked prefill and the throughput–latency tradeoff.
+          Week 8 papers: pick at least two of the four.
+        links:
+          - title: "Sarathi-Serve"
+            url: "https://arxiv.org/abs/2403.02310"
+      - id: distserve-paper
+        day: 52
+        kind: material
+        optional: true
+        title: "Read: DistServe"
+        description: |
+          Separating prefill and decode.
+          Week 8 papers: pick at least two of the four.
+        links:
+          - title: "DistServe"
+            url: "https://arxiv.org/abs/2401.09670"
+      - id: gpu-profiling-tools
+        day: 52
+        kind: material
+        title: "Learn the tools: nvidia-smi, DCGM, PyTorch profiler, py-spy"
+        links:
+          - title: "NVIDIA DCGM"
+            url: "https://developer.nvidia.com/dcgm"
+          - title: "PyTorch profiler recipe"
+            url: "https://pytorch.org/tutorials/recipes/recipes/profiler_recipe.html"
+      - id: leetcode-week-8
+        day: 54
+        kind: exercise
+        optional: true
+        title: "LeetCode: 1–2 mediums (heaps, graphs, intervals)"
+        description: "From week 8, swap one build session a week for this, in case the loop includes a classic round."
+      - id: learnings-week-8
+        day: 55
+        kind: reflection
+        title: "Week 8 review"
+        description: "Write 3 sentences on what you learned this week, and choose next week's tasks."
+      # Week 9
+      - id: prefix-caching-benchmark
+        day: 58
+        kind: exercise
+        title: "Turn on prefix caching and benchmark a shared few-shot prefix"
+        description: "Run a few-shot benchmark where every prompt shares a long prefix. Measure the speedup."
+      - id: sglang-or-quantized-run
+        day: 59
+        kind: exercise
+        optional: true
+        title: "Repeat one run with SGLang or a quantized (FP8 or AWQ) model and compare"
+      - id: benchmark-report
+        day: 59
+        dueDay: 61
+        kind: exercise
+        title: "Write a one-page benchmark report with charts"
+        description: "It goes in your portfolio."
+      - id: leetcode-week-9
+        day: 61
+        kind: exercise
+        optional: true
+        title: "LeetCode: 1–2 mediums (heaps, graphs, intervals)"
+        description: "Swap one build session this week for this, in case the loop includes a classic round."
+      - id: explain-serving-techniques
+        day: 62
+        kind: checkpoint
+        title: "I can explain continuous batching, PagedAttention and prefix caching to an interviewer."
+      - id: max-useful-concurrency
+        day: 62
+        kind: checkpoint
+        title: "I know the max useful concurrency for my setup and why."
+      - id: diagnose-slow-run
+        day: 62
+        kind: checkpoint
+        title: "I can tell from metrics whether a slow run is bottlenecked on GPU, network, or my client."
+      - id: learnings-week-9
+        day: 62
+        kind: reflection
+        title: "Week 9 review"
+        description: "Write 3 sentences on what you learned this week, and choose next week's tasks."
+
+  # ------------------------------------------------------------------ Weeks 10–13
+  - title: "Weeks 10–13: Evals and the capstone"
+    goal: "Understand what makes an eval signal trustworthy, then build a mini eval platform that ties weeks 1–9 together."
+    description: |
+      This capstone is the centerpiece of your interviews.
+
+      - **Weeks 10–11: Eval methodology** (read while you start building)
+      - **Capstone: a mini eval platform** — runner, execution, scoring, comparison UI,
+        performance write-up, README.
+      - **Weeks 12–13: Finish and polish the capstone**
+    tasks:
+      # Week 10
+      - id: error-bars-for-evals
+        day: 64
+        kind: material
+        title: "Read: Adding Error Bars to Evals (Evan Miller)"
+        description: "This is what \"maintaining evaluation signal quality\" means in practice."
+        links:
+          - title: "Adding Error Bars to Evals"
+            url: "https://arxiv.org/abs/2411.00640"
+      - id: benchmark-variance
+        day: 64
+        kind: material
+        title: "Read: Quantifying Variance in Evaluation Benchmarks"
+        description: "How much scores move between seeds and checkpoints."
+        links:
+          - title: "Quantifying Variance in Evaluation Benchmarks"
+            url: "https://arxiv.org/abs/2406.10229"
+      - id: capstone-runner
+        day: 65
+        dueDay: 68
+        kind: exercise
+        title: "Capstone: runner"
+        description: |
+          An async harness that runs 2–3 benchmarks (e.g. GSM8K, a slice of MMLU, a small coding set
+          with pass@k) against any OpenAI-compatible endpoint. Use your runner from weeks 4–6:
+          concurrency limits, retries, caching, resume.
+      - id: pass-at-k-estimator
+        day: 66
+        kind: material
+        title: "Read: section 2.1 of the Codex paper (unbiased pass@k estimator)"
+        links:
+          - title: "Codex paper"
+            url: "https://arxiv.org/abs/2107.03374"
+      - id: ai-engineering-evaluation
+        day: 66
+        dueDay: 71
+        kind: material
+        title: "Read: AI Engineering (Chip Huyen), the two evaluation chapters"
+        description: "Methodology, and evaluating AI systems, including model-as-judge."
+        links:
+          - title: "AI Engineering (Chip Huyen)"
+      - id: leetcode-week-10
+        day: 68
+        kind: exercise
+        optional: true
+        title: "LeetCode: 1–2 mediums (heaps, graphs, intervals)"
+        description: "Swap one build session this week for this, in case the loop includes a classic round."
+      - id: learnings-week-10
+        day: 69
+        kind: reflection
+        title: "Week 10 review"
+        description: "Write 3 sentences on what you learned this week, and choose next week's tasks."
+      # Week 11
+      - id: real-benchmarks
+        day: 71
+        kind: material
+        title: "Skim: SWE-bench, HELM and Chatbot Arena"
+        description: "How real benchmarks are built and scored. Chatbot Arena: pairwise comparison, Elo/Bradley–Terry."
+        links:
+          - title: "SWE-bench"
+            url: "https://arxiv.org/abs/2310.06770"
+          - title: "HELM"
+            url: "https://arxiv.org/abs/2211.09110"
+          - title: "Chatbot Arena"
+            url: "https://arxiv.org/abs/2403.04132"
+      - id: capstone-execution
+        day: 72
+        dueDay: 75
+        kind: exercise
+        title: "Capstone: execution"
+        description: "Runs as jobs on your kind cluster, workers autoscaled on queue depth, results in Postgres."
+      - id: eval-framework-code
+        day: 73
+        kind: material
+        title: "Study the code: Inspect and lm-evaluation-harness"
+        description: |
+          Inspect: datasets, solvers, scorers, logs.
+          lm-evaluation-harness: how tasks are defined and batched.
+        links:
+          - title: "Inspect"
+            url: "https://inspect.aisi.org.uk/"
+          - title: "lm-evaluation-harness"
+            url: "https://github.com/EleutherAI/lm-evaluation-harness"
+      - id: leetcode-week-11
+        day: 75
+        kind: exercise
+        optional: true
+        title: "LeetCode: 1–2 mediums (heaps, graphs, intervals)"
+        description: "Swap one build session this week for this, in case the loop includes a classic round."
+      - id: learnings-week-11
+        day: 76
+        kind: reflection
+        title: "Week 11 review"
+        description: "Write 3 sentences on what you learned this week, and choose next week's tasks."
+      # Week 12
+      - id: capstone-scoring
+        day: 78
+        dueDay: 79
+        kind: exercise
+        title: "Capstone: scoring"
+        description: "Accuracy with 95% confidence intervals, plus paired comparison between two models on the same questions."
+      - id: capstone-comparison-ui
+        day: 80
+        dueDay: 82
+        kind: exercise
+        title: "Capstone: comparison UI"
+        description: |
+          A small web page (FastAPI plus a simple frontend, or Streamlit): pick two runs, see score
+          deltas with error bars, and drill into the questions where the models disagree.
+      - id: leetcode-week-12
+        day: 82
+        kind: exercise
+        optional: true
+        title: "LeetCode: 1–2 mediums (heaps, graphs, intervals)"
+        description: "Swap one build session this week for this, in case the loop includes a classic round."
+      - id: learnings-week-12
+        day: 83
+        kind: reflection
+        title: "Week 12 review"
+        description: "Write 3 sentences on what you learned this week, and choose next week's tasks."
+      # Week 13
+      - id: capstone-end-to-end-run
+        day: 85
+        dueDay: 86
+        kind: exercise
+        title: "Run the capstone end to end on a rented GPU against two models"
+        description: "E.g. two sizes from the same family."
+      - id: capstone-performance-writeup
+        day: 86
+        dueDay: 87
+        kind: exercise
+        title: "Capstone: performance write-up"
+        description: |
+          Profile one full run, find the bottleneck (client concurrency, GPU memory, tokenization,
+          scoring), fix it, and report before/after wall-clock time and GPU utilization.
+      - id: capstone-readme
+        day: 88
+        kind: exercise
+        title: "Capstone: README"
+        description: "Architecture diagram, design decisions, what you would do at 1,000 times the scale."
+      - id: capstone-demo-video
+        day: 89
+        kind: exercise
+        title: "Record a 3-minute demo video and pin the repo on GitHub"
+      - id: leetcode-week-13
+        day: 89
+        kind: exercise
+        optional: true
+        title: "LeetCode: 1–2 mediums (heaps, graphs, intervals)"
+        description: "Swap one build session this week for this, in case the loop includes a classic round."
+      - id: real-benchmark-gain
+        day: 90
+        kind: checkpoint
+        title: "I can say whether a 1.5-point benchmark gain is real, and how many questions I'd need to detect it."
+      - id: platform-resumes-run
+        day: 90
+        kind: checkpoint
+        title: "My platform resumes a half-finished run after I kill it."
+      - id: capstone-runnable-from-readme
+        day: 90
+        kind: checkpoint
+        title: "Someone else can run my capstone from the README in under 15 minutes."
+      - id: learnings-week-13
+        day: 90
+        kind: reflection
+        title: "Week 13 review"
+        description: "Write 3 sentences on what you learned this week, and choose next week's tasks."
+
+  # ------------------------------------------------------------------ Weeks 14–15
+  - title: "Weeks 14–15: GPU fleet scheduling"
+    goal: "Speak fluently about sharing scarce GPUs between training, evals and research."
+    description: "The \"capacity fleet management\" and \"dynamic resource optimization\" part of the posting."
+    tasks:
+      # Week 14
+      - id: borg-paper
+        day: 92
+        kind: material
+        title: "Read: Large-scale cluster management at Google with Borg"
+        description: "Priorities, quotas and preemption, the ancestor of Kubernetes."
+        links:
+          - title: "Borg"
+            url: "https://research.google/pubs/large-scale-cluster-management-at-google-with-borg/"
+      - id: philly-cluster-analysis
+        day: 92
+        kind: material
+        title: "Read: Analysis of Large-Scale Multi-Tenant GPU Clusters (Microsoft Philly)"
+        description: "Why real GPU fleets sit underused."
+        links:
+          - title: "Philly GPU cluster analysis"
+            url: "https://www.usenix.org/conference/atc19/presentation/jeon"
+      - id: kueue-two-queues
+        day: 93
+        dueDay: 96
+        kind: exercise
+        title: "Install Kueue on your kind cluster with two queues and a shared quota"
+        description: |
+          Use a fake extended resource as "GPUs." Define two queues (high-priority checkpoint evals,
+          low-priority nightly suite) with a shared quota.
+      - id: tiresias-gandiva
+        day: 94
+        kind: material
+        optional: true
+        title: "Read: Tiresias and Gandiva, intro and design sections"
+        description: "GPU-specific schedulers."
+        links:
+          - title: "Tiresias"
+            url: "https://www.usenix.org/conference/nsdi19/presentation/gu"
+          - title: "Gandiva"
+            url: "https://www.usenix.org/conference/osdi18/presentation/xiao"
+      - id: leetcode-week-14
+        day: 96
+        kind: exercise
+        optional: true
+        title: "LeetCode: 1–2 mediums (heaps, graphs, intervals)"
+        description: "Swap one build session this week for this, in case the loop includes a classic round."
+      - id: learnings-week-14
+        day: 97
+        kind: reflection
+        title: "Week 14 review"
+        description: "Write 3 sentences on what you learned this week, and choose next week's tasks."
+      # Week 15
+      - id: megascale-paper
+        day: 99
+        kind: material
+        title: "Read: MegaScale (ByteDance)"
+        description: "Fault tolerance and diagnosis at 10,000+ GPUs."
+        links:
+          - title: "MegaScale"
+            url: "https://arxiv.org/abs/2402.15627"
+      - id: llama3-infrastructure
+        day: 99
+        kind: material
+        title: "Read: the infrastructure section of The Llama 3 Herd of Models"
+        description: "Real numbers on failures and interruptions at scale."
+        links:
+          - title: "The Llama 3 Herd of Models"
+            url: "https://arxiv.org/abs/2407.21783"
+      - id: kueue-preemption-demo
+        day: 100
+        dueDay: 102
+        kind: exercise
+        title: "Show low-priority jobs being preempted and resuming"
+        description: "Submit a burst of jobs and show low-priority jobs being preempted and then resuming, using your capstone's checkpointing."
+      - id: kueue-and-ray-autoscaler-docs
+        day: 101
+        kind: material
+        title: "Docs: Kueue and the Ray autoscaler"
+        description: "Kueue: job queueing, quotas, fair sharing and preemption on Kubernetes."
+        links:
+          - title: "Kueue overview"
+            url: "https://kueue.sigs.k8s.io/docs/overview/"
+          - title: "Ray autoscaler"
+            url: "https://docs.ray.io/en/latest/cluster/key-concepts.html"
+      - id: capstone-readme-scheduling
+        day: 103
+        kind: exercise
+        title: "Add a \"Scheduling\" section to the capstone README"
+      - id: leetcode-week-15
+        day: 103
+        kind: exercise
+        optional: true
+        title: "LeetCode: 1–2 mediums (heaps, graphs, intervals)"
+        description: "Swap one build session this week for this, in case the loop includes a classic round."
+      - id: whiteboard-gang-scheduling
+        day: 104
+        kind: checkpoint
+        title: "I can whiteboard gang scheduling: why a multi-GPU job needs all its GPUs at once."
+      - id: whiteboard-bin-packing
+        day: 104
+        kind: checkpoint
+        title: "I can whiteboard bin-packing and fragmentation: why 8 free GPUs spread over 8 nodes can be useless."
+      - id: whiteboard-priority-preemption
+        day: 104
+        kind: checkpoint
+        title: "I can whiteboard priority and preemption: new-checkpoint evals vs. nightly regression suite vs. ad hoc research."
+      - id: whiteboard-idle-capacity
+        day: 104
+        kind: checkpoint
+        title: "I can whiteboard opportunistic use of idle capacity, with checkpoint-and-resume so preemption costs little."
+      - id: whiteboard-right-sizing
+        day: 104
+        kind: checkpoint
+        title: "I can whiteboard right-sizing: replicas, tensor parallelism and batch size per eval to maximize throughput per GPU."
+      - id: design-scheduling-policy
+        day: 104
+        kind: checkpoint
+        title: "I can design a scheduling policy for evals sharing a fleet with training, and defend its trade-offs."
+      - id: low-gpu-utilization-causes
+        day: 104
+        kind: checkpoint
+        title: "I can explain the main causes of low GPU utilization and how to fix each."
+      - id: learnings-week-15
+        day: 104
+        kind: reflection
+        title: "Week 15 review"
+        description: "Write 3 sentences on what you learned this week, and choose next week's tasks."
+
+  # ------------------------------------------------------------------ Weeks 16–17
+  - title: "Weeks 16–17: Interview prep"
+    goal: "Turn 8 years of backend work plus the capstone into crisp answers for practical coding, system design, and past-project deep dives."
+    description: |
+      **Practical coding** (5 one-hour timed sessions): these tend to look like real infrastructure
+      work, not puzzles. Practice from a blank file.
+
+      **System design** (practice each out loud, 45 minutes): for each, cover the requirements and
+      scale numbers, data model, scheduling, failure handling and resume, observability, and cost.
+      Reference: *System Design Interview* (Alex Xu), vol. 1 and 2, for format practice; your
+      capstone for content.
+    tasks:
+      # Week 16
+      - id: design-checkpoint-eval-platform
+        day: 106
+        kind: exercise
+        title: "System design: a platform that runs thousands of evals on every new training checkpoint"
+        description: "On a GPU fleet shared with training, flagging regressions within hours. 45 minutes, out loud."
+        links:
+          - title: "System Design Interview, vol. 1–2 (Alex Xu)"
+      - id: story-bank
+        day: 106
+        dueDay: 117
+        kind: exercise
+        title: "Fill in the story bank"
+        description: "One story (situation, action, result) with numbers for each posting bullet."
+        noteTemplate: |
+          | Posting bullet | My story (situation, action, result) | Numbers |
+          | --- | --- | --- |
+          | Highly reliable, easy-to-use infrastructure |  |  |
+          | Collaborating with other teams on internal tooling |  |  |
+          | Resolving a performance bottleneck |  |  |
+          | Large-scale distributed systems |  |  |
+          | Diving deep into a hard bug at any level of the stack |  |  |
+          | Capstone: eval platform and benchmark report |  |  |
+      - id: coding-async-worker-pool
+        day: 107
+        kind: exercise
+        title: "Timed coding: async worker pool"
+        description: "A concurrency limit, per-task timeout, and retries with backoff. One hour, from a blank file."
+      - id: design-eval-inference-layer
+        day: 108
+        kind: exercise
+        title: "System design: the inference layer for evals"
+        description: "Hundreds of model checkpoints, bursty demand, a fixed GPU budget. 45 minutes, out loud."
+      - id: coding-token-bucket
+        day: 109
+        kind: exercise
+        title: "Timed coding: token-bucket rate limiter"
+        description: "Then make it safe across threads or coroutines. One hour, from a blank file."
+      - id: coding-priority-scheduler
+        day: 110
+        kind: exercise
+        title: "Timed coding: priority job scheduler with preemption"
+        description: "Jobs have priority and GPU count; the cluster has N GPUs. One hour, from a blank file."
+      - id: leetcode-week-16
+        day: 110
+        kind: exercise
+        optional: true
+        title: "LeetCode: 1–2 mediums (heaps, graphs, intervals)"
+        description: "Swap one build session this week for this, in case the loop includes a classic round."
+      - id: learnings-week-16
+        day: 111
+        kind: reflection
+        title: "Week 16 review"
+        description: "Write 3 sentences on what you learned this week, and choose next week's tasks."
+      # Week 17
+      - id: design-model-comparison-service
+        day: 113
+        kind: exercise
+        title: "System design: a model comparison service"
+        description: "Store every completion and score, and support slicing by benchmark, category and checkpoint. 45 minutes, out loud."
+      - id: mock-system-design-interviews
+        day: 113
+        dueDay: 118
+        kind: exercise
+        title: "Two mock system design interviews"
+        description: "With a peer or a paid mock service."
+      - id: coding-lru-prefix-cache
+        day: 114
+        kind: exercise
+        title: "Timed coding: LRU cache with TTL, plus a prefix cache on token sequences"
+        description: "The prefix cache is a simplified version of RadixAttention. One hour, from a blank file."
+      - id: design-agentic-eval-runner
+        day: 115
+        kind: exercise
+        title: "System design: the eval runner for agentic tasks"
+        description: "Tasks run for an hour each in sandboxes (e.g. SWE-bench style). 45 minutes, out loud."
+      - id: coding-streaming-accuracy
+        day: 116
+        kind: exercise
+        title: "Timed coding: streaming per-model accuracy with confidence intervals"
+        description: "Parse a large log of eval results, in bounded memory. One hour, from a blank file."
+      - id: leetcode-week-17
+        day: 117
+        kind: exercise
+        optional: true
+        title: "LeetCode: 1–2 mediums (heaps, graphs, intervals)"
+        description: "Swap one build session this week for this, in case the loop includes a classic round."
+      - id: why-evals-answer
+        day: 118
+        kind: checkpoint
+        title: "I have a 2-minute \"why evals, why now\" answer that links my backend background to this role."
+      - id: resume-updated
+        day: 118
+        kind: exercise
+        title: "Update your resume"
+        description: "Capstone and benchmark report near the top, with numbers."
+      - id: learnings-week-17
+        day: 118
+        kind: reflection
+        title: "Week 17 review"
+        description: "Write 3 sentences on what you learned over the whole path."
