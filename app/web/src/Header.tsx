@@ -23,7 +23,7 @@ export function Header() {
               to={l.to}
               className={({ isActive }) => `navlink${isActive ? " on" : ""}`}
             >
-              {l.label}
+              <span>{l.label}</span>
             </NavLink>
           ))}
         </div>

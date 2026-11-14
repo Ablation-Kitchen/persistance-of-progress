@@ -1,46 +1,76 @@
-/* Design tokens (spec §7.1), taken from the Today prototype. */
+/*
+ * Design tokens, matched to the ablation.kitchen site (website/src/styles/global.css): the same
+ * neutrals, sage accent, ochre and slate planes, fonts and easing. Roles:
+ *   --accent / --accent-text  brand marks, links, focus, progress, "current" (fill / text)
+ *   --warn                    overdue, behind, errors, destructive actions (text-safe in both)
+ *   --done                    finished work (text-safe in both)
+ * `--accent` is for graphics only (3.26:1 on the light bg): use `--accent-text` for text.
+ */
 :root {
+  color-scheme: light dark;
   --bg: #f7f6f3;
   --surface: #ffffff;
   --ink: #111111;
   --soft: #3b3b38;
   --meta: #6a6a66;
   --rule: #e4e2dc;
-  --accent: #e4572e;
-  --accent-text: #b83d1a;
-  --done: #2f6f5e;
+  --accent: #69908c;
+  --accent-text: #4a6562;
+  --warn: #8a6424;
+  --done: #4a6886;
   --shadow: rgba(0, 0, 0, 0.35);
-  --radius-card: 14px;
+  --radius-card: 20px;
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
-  --font-display: "Instrument Serif", Georgia, serif;
-  --font-body: "Inter Tight", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-display: "Instrument Serif", ui-serif, Georgia, serif;
+  --font-body: "Inter Tight", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+/* No choice stored: follow the OS. Keep in sync with the block below. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
+    color-scheme: dark;
     --bg: #0c0c0b;
     --surface: #141413;
     --ink: #edebe6;
     --soft: #c7c4bc;
     --meta: #9a9a95;
     --rule: #262624;
-    --accent: #ff6a3d;
-    --accent-text: #ff7a52;
-    --done: #6cc2a8;
+    --accent-text: #85a6a3;
+    --warn: #d4b07a;
+    --done: #8fadc6;
     --shadow: rgba(0, 0, 0, 0.8);
   }
 }
 :root[data-theme="dark"] {
+  color-scheme: dark;
   --bg: #0c0c0b;
   --surface: #141413;
   --ink: #edebe6;
   --soft: #c7c4bc;
   --meta: #9a9a95;
   --rule: #262624;
-  --accent: #ff6a3d;
-  --accent-text: #ff7a52;
-  --done: #6cc2a8;
+  --accent-text: #85a6a3;
+  --warn: #d4b07a;
+  --done: #8fadc6;
   --shadow: rgba(0, 0, 0, 0.8);
+}
+
+/* 0.5s cross-fade on toggle only: ThemeToggle puts the class on <html> for ~500ms. */
+@media (prefers-reduced-motion: no-preference) {
+  .theme-fading,
+  .theme-fading *,
+  .theme-fading *::before,
+  .theme-fading *::after {
+    transition:
+      background-color 0.5s var(--ease),
+      border-color 0.5s var(--ease),
+      color 0.5s var(--ease),
+      fill 0.5s var(--ease),
+      stroke 0.5s var(--ease) !important;
+  }
 }
 
 * {
@@ -52,18 +82,32 @@ html {
 body {
   margin: 0;
   background: var(--bg);
+  color: var(--soft);
+  font: 400 17px/1.65 var(--font-body);
+  overflow-x: clip;
+}
+h1,
+h2,
+h3 {
   color: var(--ink);
-  font: 400 16px/1.6 var(--font-body);
-  transition:
-    background-color 0.5s var(--ease),
-    color 0.5s;
+  font-family: var(--font-display);
+  font-weight: 400;
 }
 a {
-  color: var(--accent-text);
-  text-decoration: none;
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--accent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
 }
 a:hover {
-  text-decoration: underline;
+  text-decoration-thickness: 2px;
+}
+/* One visible focus ring for every focusable element (WCAG 2.4.7). */
+:focus-visible {
+  outline: 2px solid var(--accent-text);
+  outline-offset: 3px;
+  border-radius: 4px;
 }
 button {
   font: inherit;
@@ -80,11 +124,12 @@ button {
   font-weight: 400;
 }
 .wrap {
-  max-width: 1240px;
+  width: 100%;
+  max-width: 1180px;
   margin: 0 auto;
   padding: 0 40px;
 }
-@media (max-width: 700px) {
+@media (max-width: 599px) {
   .wrap {
     padding: 0 16px;
   }
@@ -103,11 +148,18 @@ nav {
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding-top: 14px;
-  padding-bottom: 14px;
+  gap: 4px 24px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+@media (min-width: 640px) {
+  nav {
+    padding-top: 14px;
+    padding-bottom: 14px;
+  }
 }
 .brand {
+  color: var(--ink);
   font-family: var(--font-mono);
   font-size: 14px;
   display: flex;
@@ -125,31 +177,68 @@ nav {
   font-size: 14px;
   flex-wrap: wrap;
 }
+.navlink,
+a.pill,
+.prow-when {
+  text-decoration: none;
+}
 .navlink {
   position: relative;
-  padding: 6px 0;
-  color: var(--soft);
-}
-.navlink:hover {
-  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 6px;
+  margin: 0 -6px;
   color: var(--ink);
 }
-.navlink.on {
-  color: var(--ink);
-  font-weight: 500;
+.navlink > span {
+  position: relative;
+  padding: 2px 0;
 }
-.navlink.on::after {
+/* Underline slides in from the left on hover (0.35s); stays on for the current page. */
+.navlink > span::after {
   content: "";
   position: absolute;
-  left: 0;
-  right: 0;
+  inset-inline: 0;
   bottom: 0;
   height: 1px;
   background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+}
+.navlink:hover > span::after,
+.navlink.on > span::after {
+  transform: scaleX(1);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .navlink > span::after {
+    transition: transform 0.35s var(--ease);
+  }
 }
 .navtools {
   display: flex;
+  align-items: center;
   gap: 8px;
+}
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  transition: background-color 0.2s var(--ease);
+}
+.icon-btn:hover {
+  background: var(--surface);
+}
+.icon-btn svg {
+  width: 20px;
+  height: 20px;
 }
 
 /* Components */
@@ -215,7 +304,7 @@ nav {
 }
 h1 {
   margin: 0;
-  font-size: clamp(48px, 7vw, 96px);
+  font-size: clamp(52px, 8vw, 112px);
   line-height: 1;
   letter-spacing: -0.025em;
 }
@@ -236,9 +325,9 @@ h1 {
   border-color: var(--rule);
 }
 .pill.danger {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
+  background: var(--warn);
+  border-color: var(--warn);
+  color: var(--bg);
 }
 .row {
   display: flex;
@@ -255,7 +344,7 @@ h1 {
   font-size: 14px;
 }
 .error {
-  color: var(--accent-text);
+  color: var(--warn);
 }
 .error p {
   margin: 8px 0;
@@ -278,7 +367,7 @@ code {
   border-color: currentColor;
 }
 .tag.bad {
-  color: var(--accent-text);
+  color: var(--warn);
   border-color: currentColor;
 }
 
@@ -324,7 +413,7 @@ code {
   cursor: pointer;
 }
 .path-item > button:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--accent-text);
   border-radius: var(--radius-card);
 }
 .path-item > button:disabled {
@@ -359,7 +448,7 @@ code {
   cursor: pointer;
 }
 .upload:focus-within {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--accent-text);
 }
 
 /* Start-date dialog */
@@ -441,7 +530,7 @@ code {
   flex: 1 1 200px;
 }
 .enrollment .pick:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--accent-text);
 }
 .enrollment.active .path-title::before {
   content: "● ";
@@ -476,7 +565,7 @@ code {
   color: var(--ink);
 }
 .status-over {
-  color: var(--accent-text);
+  color: var(--warn);
 }
 .status-ok {
   color: var(--done);
@@ -643,8 +732,8 @@ h1 em {
   border-color: var(--done);
 }
 .day .dots i.overdue {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--warn);
+  border-color: var(--warn);
 }
 .day .dots i.skipped {
   border-style: dashed;
@@ -772,7 +861,7 @@ h1 em {
   overflow-wrap: anywhere;
 }
 .title-btn:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--accent-text);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -1148,7 +1237,7 @@ h1 em {
   padding: 16px 20px;
 }
 .blk-head:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--accent-text);
   outline-offset: -2px;
 }
 .blk-num {
@@ -1202,8 +1291,8 @@ h1 em {
   color: var(--done);
 }
 .state-tag.behind {
-  border-color: var(--accent-text);
-  color: var(--accent-text);
+  border-color: var(--warn);
+  color: var(--warn);
 }
 .blk-body {
   padding: 0 20px 16px;
@@ -1550,7 +1639,7 @@ mark {
   flex-wrap: wrap;
 }
 .gap.due {
-  border-color: var(--accent);
+  border-color: var(--warn);
 }
 .day-notes h3 {
   margin: 0;
@@ -1632,7 +1721,7 @@ mark {
   gap: 8px;
 }
 .reload-notice {
-  color: var(--accent-text);
+  color: var(--warn);
   font-size: 14px;
 }
 .reload-summary {

@@ -256,9 +256,10 @@ The prototypes are the visual reference. They are rewritten, not promoted: [Toda
 ### 7.1 Shell and visual direction
 
 - **Fonts:** Instrument Serif for display, Inter Tight for body text, JetBrains Mono for labels.
-- **Light theme:** `#F7F6F3` / `#FFFFFF` / `#111111`, accent `#E4572E`.
-- **Dark theme:** `#0C0C0B` / `#141413` / `#EDEBE6`, accent `#FF6A3D`.
-- **Components:** pill buttons, cards with a 12–14 px radius and a hover lift.
+- **Styling** follows the ablation.kitchen site (`website/src/styles/global.css`).
+- **Light theme:** `#F7F6F3` / `#FFFFFF` / `#111111`, sage accent `#69908C` (text `#4A6562`), warning `#8A6424`, done `#4A6886`.
+- **Dark theme:** `#0C0C0B` / `#141413` / `#EDEBE6`, sage accent `#69908C` (text `#85A6A3`), warning `#D4B07A`, done `#8FADC6`.
+- **Components:** pill buttons, cards with a 20 px radius and a hover lift, an icon-only sun/moon theme toggle.
 - **Header:** Today / Path / Notes nav, a light/dark toggle, and the **app menu**. The menu holds the Enrollment switcher, Backup, Restore and the "last backup: N days ago" hint (or "never").
 - **Changed-file banner** (§8.5): "The path file has changed — review reload". It opens the reload preview.
 - **Routes** (React Router), with view state in the URL:
@@ -299,7 +300,7 @@ The switcher lists each Enrollment's title, start date and Task count, and the a
   - The kind (and `optional`) as a mono label, then the title (a click selects the Task).
   - Status text such as "2d overdue", "day 2 of 4 · due fri" or "done today".
   - An inline more/less (description and links) and skip/unskip.
-  - Overdue shows as an accent dot and accent text.
+  - Overdue shows as a warning-colour dot and warning-colour text.
 - **Side pane:** the selected Task's details with Done/Skip, its Task Note, the Day Note and the Block goal. Both Notes use the shared editor with the **Write/Preview toggle**.
 - **Narrow screens** stack Catch up → Today → In progress → the side pane.
 - **Before the start:** the hero says "Almost ready" with a countdown, and a tickable day-1 preview appears. **After the end:** "You finished it", a summary (percent, bonus, longest streak) and a "Still open" column of leftover overdue Tasks. Neither state shows the strip.
